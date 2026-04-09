@@ -1,6 +1,6 @@
 # Настойки Бота
 TOKEN = "ТВОЙ_ТОКЕН_БОТА" # Токен бота
-ALLOWED_ID = [1136934279348224042] # Доверенные ID
+ALLOWED_ID = [ВАШ_DISCORD_ID] # Доверенные ID
 SHUTDOWN_TIME = 5  # Время на завершение работы в секундах
 REBOOT_DELAY = 5  # Задержка перед перезапуском в секундах
 SERVER_SETTINGS_FILE = "data/server/server_settings.json" # Настройки серверов
