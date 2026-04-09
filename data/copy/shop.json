@@ -1,0 +1,429 @@
+{
+    "categories": {
+        "🍹 Напитки": {
+            "description": "Замечательные напитки для хорошего отдыха!",
+            "type": "regular",
+            "items": {
+                "small_energy_drink": {
+                    "name": "Маленький энергетик",
+                    "description": "Восстанавливает 10 энергии",
+                    "type": "consumable",
+                    "price": {
+                        "copper_coin": 30
+                    },
+                    "quantity": 99,
+                    "effects": {
+                        "energy_restore": 10
+                    }
+                },
+                "energy_drink": {
+                    "name": "Энергетик",
+                    "description": "Восстанавливает 25 энергии",
+                    "type": "consumable",
+                    "price": {
+                        "copper_coin": 70
+                    },
+                    "quantity": 99,
+                    "effects": {
+                        "energy_restore": 25
+                    }
+                },
+                "large_energy_drink": {
+                    "name": "Большой энергетик",
+                    "description": "Восстанавливает 50 энергии",
+                    "type": "consumable",
+                    "price": {
+                        "silver_coin": 2,
+                        "copper_coin": 50
+                    },
+                    "quantity": 99,
+                    "effects": {
+                        "energy_restore": 50
+                    },
+                    "requirements": {
+                        "level": 5
+                    }
+                },
+                "premium_energy_drink": {
+                    "name": "Премиум энергетик",
+                    "description": "Восстанавливает 80 энергии",
+                    "type": "consumable",
+                    "price": {
+                        "silver_coin": 5
+                    },
+                    "quantity": 99,
+                    "effects": {
+                        "energy_restore": 80
+                    },
+                    "requirements": {
+                        "level": 8
+                    }
+                }
+            }
+        },
+        "📚 Тайная библиотека": {
+            "description": "Древние фолианты и запретные знания, дарующие силу!",
+            "type": "regular",
+            "items": {
+                "small_exp_boost": {
+                    "name": "«Основы алхимии»",
+                    "description": "Простейшие рецепты, ускоряющие обучение. (+10% к опыту на 1 час)",
+                    "type": "consumable",
+                    "price": {
+                        "copper_coin": 100
+                    },
+                    "quantity": 30,
+                    "effects": {
+                        "exp_multiplier": 1.1
+                    },
+                    "duration": 3600
+                },
+                "exp_boost": {
+                    "name": "«Трактат о магическом просветлении»",
+                    "description": "Глубокие знания, раскрывающие потенциал разума. (+20% к опыту на 2 часа)",
+                    "type": "consumable",
+                    "price": {
+                        "silver_coin": 2,
+                        "copper_coin": 50
+                    },
+                    "quantity": 30,
+                    "effects": {
+                        "exp_multiplier": 1.2
+                    },
+                    "duration": 7200
+                },
+                "money_boost": {
+                    "name": "«Искусство торговли»",
+                    "description": "Секреты купцов, увеличивающие прибыль. (+15% к заработку на 1 час)",
+                    "type": "consumable",
+                    "price": {
+                        "silver_coin": 3
+                    },
+                    "quantity": 30,
+                    "effects": {
+                        "money_multiplier": 1.15
+                    },
+                    "duration": 3600
+                }
+            }
+        },
+        "⚙️ Улучшения": {
+            "description": "Батарейки и компоненты.",
+            "type": "regular",
+            "items": {
+                "energy_extender_small": {
+                    "name": "Малый усилитель энергии",
+                    "description": "Увеличивает максимальную энергию на 4 (постоянно)",
+                    "type": "upgrade",
+                    "price": {
+                        "silver_coin": 15
+                    },
+                    "quantity": 5,
+                    "effects": {
+                        "max_energy": 4
+                    },
+                    "requirements": {
+                        "level": 6
+                    }
+                },
+                "energy_extender": {
+                    "name": "Усилитель энергии",
+                    "description": "Увеличивает максимальную энергию на 8 (постоянно)",
+                    "type": "upgrade",
+                    "price": {
+                        "gold_coin": 1,
+                        "silver_coin": 20
+                    },
+                    "quantity": 5,
+                    "effects": {
+                        "max_energy": 8
+                    },
+                    "requirements": {
+                        "level": 10
+                    }
+                },
+                "exp_amplifier": {
+                    "name": "Амплификатор опыта",
+                    "description": "Увеличивает получаемый опыт на 3% (постоянно)",
+                    "type": "upgrade",
+                    "price": {
+                        "gold_coin": 2
+                    },
+                    "quantity": 40,
+                    "effects": {
+                        "exp_multiplier": 1.03
+                    },
+                    "requirements": {
+                        "level": 6
+                    },
+                    "duration": 10000000000
+                }
+            }
+        },
+        "🎁 Наборы": {
+            "description": "Купите подарок себе или кому-то ещё!",
+            "type": "regular",
+            "items": {
+                "starter_pack": {
+                    "name": "Стартовый набор",
+                    "description": "Набор для новичков: 3 энергетика и малый усилитель опыта",
+                    "type": "bundle",
+                    "price": {
+                        "copper_coin": 200
+                    },
+                    "quantity": 30,
+                    "discount": 10,
+                    "contains": {
+                        "energy_drink": 3,
+                        "small_exp_boost": 1
+                    },
+                    "requirements": {
+                        "level": 2
+                    }
+                },
+                "worker_pack": {
+                    "name": "Рабочий набор",
+                    "description": "2 больших энергетика и усилитель дохода",
+                    "type": "bundle",
+                    "price": {
+                        "silver_coin": 5
+                    },
+                    "quantity": 20,
+                    "discount": 15,
+                    "contains": {
+                        "large_energy_drink": 2,
+                        "money_boost": 1
+                    },
+                    "requirements": {
+                        "level": 8
+                    }
+                },
+                "premium_pack": {
+                    "name": "Премиум набор",
+                    "description": "3 премиум энергетика, 2 усилителя опыта и усилитель дохода",
+                    "type": "bundle",
+                    "price": {
+                        "gold_coin": 2,
+                        "silver_coin": 50
+                    },
+                    "quantity": 15,
+                    "discount": 20,
+                    "contains": {
+                        "premium_energy_drink": 3,
+                        "exp_boost": 2,
+                        "money_boost": 1
+                    },
+                    "requirements": {
+                        "level": 12
+                    }
+                }
+            }
+        },
+        "🛠 Инструменты": {
+            "description": "Лучшие инструменты и техника только у нас!",
+            "type": "regular",
+            "items": {
+                "metal_detector_basic": {
+                    "name": "Базовый металлоискатель",
+                    "description": "Дешёвый и простой детектор для новичков.",
+                    "type": "tools",
+                    "sub_type": "metal_detector",
+                    "tool_level": 1,
+                    "price": {
+                        "silver_coin": 15
+                    },
+                    "quantity": "∞",
+                    "max_durability": 50,
+                    "details": {
+                        "durability": 50
+                    },
+                    "sold": false,
+                    "use": false,
+                    "delete": false
+                },
+                "metal_detector_advanced": {
+                    "name": "Улучшенный металлоискатель",
+                    "description": "Надёжный прибор для серьёзных поисков.",
+                    "type": "tools",
+                    "sub_type": "metal_detector",
+                    "tool_level": 2,
+                    "price": {
+                        "gold_coin": 1
+                    },
+                    "quantity": "∞",
+                    "max_durability": 150,
+                    "details": {
+                        "durability": 150
+                    },
+                    "sold": false,
+                    "use": false,
+                    "delete": false
+                },
+                "metal_detector_pro": {
+                    "name": "Профессиональный металлоискатель",
+                    "description": "Мощный детектор с глубоким поиском.",
+                    "type": "tools",
+                    "sub_type": "metal_detector",
+                    "tool_level": 3,
+                    "price": {
+                        "gold_coin": 5
+                    },
+                    "quantity": "∞",
+                    "max_durability": 300,
+                    "details": {
+                        "durability": 300
+                    },
+                    "sold": false,
+                    "use": false,
+                    "delete": false
+                }
+            }
+        },
+        "💊 Усилители": {
+            "description": "Пахнет чем-то нелегальным...",
+            "type": "black_market",
+            "items": {
+                "illegal_exp_boost": {
+                    "name": "Нелегальный усилитель опыта",
+                    "description": "+40% к опыту на 1 час",
+                    "type": "consumable",
+                    "price": {
+                        "gold_coin": 5
+                    },
+                    "quantity": "∞",
+                    "effects": {
+                        "exp_multiplier": 1.4
+                    },
+                    "requirements": {
+                        "level": 16
+                    },
+                    "duration": 3600
+                },
+                "strong_money_boost": {
+                    "name": "Сильный усилитель дохода",
+                    "description": "+30% к заработку на 1 час",
+                    "type": "consumable",
+                    "price": {
+                        "gold_coin": 6
+                    },
+                    "quantity": "∞",
+                    "effects": {
+                        "money_multiplier": 1.3
+                    },
+                    "duration": 3600
+                },
+                "energy_overdrive": {
+                    "name": "Энергетический овердрайв",
+                    "description": "Восстанавливает всю энергию и +1 к максимуму",
+                    "type": "consumable",
+                    "price": {
+                        "gold_coin": 8
+                    },
+                    "quantity": "∞",
+                    "effects": {
+                        "energy_restore": 10000000000,
+                        "max_energy": 1
+                    },
+                    "requirements": {
+                        "level": 18
+                    }
+                }
+            }
+        },
+        "🔞 Эксклюзив": {
+            "description": "Скорее всего это опасно для здоровья!",
+            "type": "black_market",
+            "items": {
+                "energy_extender_large": {
+                    "name": "Большой усилитель энергии",
+                    "description": "Увеличивает максимальную энергию на 25 (постоянно)",
+                    "type": "upgrade",
+                    "price": {
+                        "gold_coin": 25
+                    },
+                    "quantity": 30,
+                    "effects": {
+                        "max_energy": 25
+                    },
+                    "requirements": {
+                        "level": 20
+                    }
+                },
+                "exp_godmode": {
+                    "name": "Режим бога (опыт)",
+                    "description": "+80% к опыту на 30 минут",
+                    "type": "consumable",
+                    "price": {
+                        "gold_coin": 20
+                    },
+                    "quantity": "∞",
+                    "effects": {
+                        "exp_multiplier": 1.8
+                    },
+                    "requirements": {
+                        "level": 18
+                    },
+                    "duration": 1800
+                },
+                "money_godmode": {
+                    "name": "Режим бога (доход)",
+                    "description": "+80% к заработку на 30 минут",
+                    "type": "consumable",
+                    "price": {
+                        "gold_coin": 15
+                    },
+                    "quantity": "∞",
+                    "effects": {
+                        "money_multiplier": 1.8
+                    },
+                    "requirements": {
+                        "level": 18
+                    },
+                    "duration": 1800
+                }
+            }
+        },
+        "🔪 Инструменты": {
+            "description": "Нелегальные и модифицированные инструменты.",
+            "type": "black_market",
+            "items": {
+                "metal_detector_military": {
+                    "name": "Военный сканер",
+                    "description": "Высокотехнологичный прибор, используемый армией.",
+                    "type": "tools",
+                    "sub_type": "metal_detector",
+                    "tool_level": 4,
+                    "price": {
+                        "gold_coin": 20
+                    },
+                    "quantity": "∞",
+                    "max_durability": 500,
+                    "details": {
+                        "durability": 500
+                    },
+                    "sold": false,
+                    "use": false,
+                    "delete": false
+                },
+                "metal_detector_legendary": {
+                    "name": "Детектор «Золотой Дракон»",
+                    "description": "Артефактный металлоискатель с магическим усилением.",
+                    "type": "tools",
+                    "sub_type": "metal_detector",
+                    "tool_level": 5,
+                    "price": {
+                        "platinum_coin": 1
+                    },
+                    "quantity": "∞",
+                    "max_durability": 1000,
+                    "details": {
+                        "durability": 1000
+                    },
+                    "sold": false,
+                    "use": false,
+                    "delete": false
+                }
+            }
+        }
+    }
+}

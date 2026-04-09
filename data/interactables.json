@@ -1,0 +1,266 @@
+{
+    "hello": [
+        {
+            "path": "data/interactables/hello/N2ryqZUd.gif",
+            "anime": "Аниме: Хьёка"
+        },
+        {
+            "path": "data/interactables/hello/7anafG7z.gif",
+            "anime": "Аниме: Магическая битва"
+        },
+        {
+            "path": "data/interactables/hello/xOQV01fv9.gif",
+            "anime": "Аниме: Бездомный бог"
+        },
+        {
+            "path": "data/interactables/hello/XqETPav2x.gif",
+            "anime": "Аниме: Вступай в стаю! Школа Сэтон"
+        },
+        {
+            "path": "data/interactables/hello/7bTP8yNH.gif",
+            "anime": "Аниме: Несчастная"
+        },
+        {
+            "path": "data/interactables/hello/J2J1KeQ9.gif",
+            "anime": "Аниме: Саки: Сторона-А"
+        },
+        {
+            "path": "data/interactables/hello/nyx7GibE.gif",
+            "anime": "Аниме: Сасаки и Мияно"
+        },
+        {
+            "path": "data/interactables/hello/M6B4wNoP.gif",
+            "anime": "Аниме: Токийские вороны"
+        },
+        {
+            "path": "data/interactables/hello/0JFPkxFu.gif",
+            "anime": "Аниме: На закате человечества"
+        },
+        {
+            "path": "data/interactables/hello/W98ZzNK3.gif",
+            "anime": "Аниме: Пять невест"
+        },
+        {
+            "path": "data/interactables/hello/PrpfTIBo.gif",
+            "anime": "Аниме: Банановая рыба"
+        },
+        {
+            "path": "data/interactables/hello/0CkXQKoM.gif",
+            "anime": "Аниме: Бездомный бог"
+        }
+    ],
+    "goodbye": [
+        {
+            "path": "data/interactables/goodbye/IK-sISU3f.gif",
+            "anime": "Аниме: Когда плачут цикады"
+        },
+        {
+            "path": "data/interactables/goodbye/AN-cFm1em.gif",
+            "anime": "Аниме: Магическая битва"
+        },
+        {
+            "path": "data/interactables/goodbye/pAVBjL9F2.gif",
+            "anime": "Аниме: Драконий жемчуг Зет"
+        },
+        {
+            "path": "data/interactables/goodbye/bJF2341sf.gif",
+            "anime": "Аниме: Притворная любовь"
+        },
+        {
+            "path": "data/interactables/goodbye/1i7k91H7q.gif",
+            "anime": "Аниме: Пять невест"
+        },
+        {
+            "path": "data/interactables/goodbye/e64kdpkG.gif",
+            "anime": "Аниме: Моя девушка не только милая"
+        },
+        {
+            "path": "data/interactables/goodbye/poCGGtilK.gif",
+            "anime": "Аниме: Как и ожидалось, моя школьная романтическая жизнь не удалась"
+        },
+        {
+            "path": "data/interactables/goodbye/M1luTGWA3.gif",
+            "anime": "Аниме: Озорная Такаги"
+        },
+        {
+            "path": "data/interactables/goodbye/co6r4sy8A.gif",
+            "anime": "Аниме: Карнавал"
+        },
+        {
+            "path": "data/interactables/goodbye/Ay7a28TG.gif",
+            "anime": "Аниме: Школьная форма Акэби-тян"
+        },
+        {
+            "path": "data/interactables/goodbye/KwaLuDSf3.gif",
+            "anime": "Аниме: Доктор Рамунэ"
+        },
+        {
+            "path": "data/interactables/goodbye/lGL-zekG.gif",
+            "anime": "Аниме: Несносные пришельцы"
+        }
+    ],
+    "kiss": [
+        {
+            "path": "data/interactables/kiss/oUiAFsDZ.gif",
+            "anime": "Аниме: Пожиратели духов: Зеро"
+        },
+        {
+            "path": "data/interactables/kiss/GXwfMa1-.gif",
+            "anime": "Аниме: Сотня"
+        },
+        {
+            "path": "data/interactables/kiss/EyfjVtaQ.gif",
+            "anime": "Аниме: Вермейл в золотом"
+        },
+        {
+            "path": "data/interactables/kiss/kvNK7IQw.gif",
+            "anime": "Аниме: Очень приятно, Бог"
+        },
+        {
+            "path": "data/interactables/kiss/K2xSjYCe.gif",
+            "anime": "Аниме: Ползучий хаос Няруко-сан!"
+        },
+        {
+            "path": "data/interactables/kiss/JXuZ1DpJ9.gif",
+            "anime": "Аниме: 35-ый отряд Антимагической академии"
+        },
+        {
+            "path": "data/interactables/kiss/OIYqnY9IF.gif",
+            "anime": "Аниме: Приоритет чудо-яйца"
+        },
+        {
+            "path": "data/interactables/kiss/J19WNqwS8.gif",
+            "anime": "Аниме: Токийские мстители"
+        },
+        {
+            "path": "data/interactables/kiss/dUTutY96.gif",
+            "anime": "Аниме: Связанные небом"
+        },
+        {
+            "path": "data/interactables/kiss/TPMKyWLTh.gif",
+            "anime": "Аниме: Подручный Луизы-Нулизы"
+        },
+        {
+            "path": "data/interactables/kiss/ATrSKxSv.gif",
+            "anime": "Аниме: Поцелуй Сестёр"
+        },
+        {
+            "path": "data/interactables/kiss/6J3q0jHx.gif",
+            "anime": "Аниме: Киберпанк: Бегущие по краю"
+        }
+    ],
+    "cheek kiss": [
+        {
+            "path": "data/interactables/cheek kiss/elWiloglN.gif",
+            "anime": "Аниме: Мастера меча онлайн"
+        },
+        {
+            "path": "data/interactables/cheek kiss/RitF1wOp.gif",
+            "anime": "Аниме: Тринити: Семеро магов"
+        },
+        {
+            "path": "data/interactables/cheek kiss/c9w4ofLI.gif",
+            "anime": "Аниме: Золотая мозаика"
+        },
+        {
+            "path": "data/interactables/cheek kiss/z5Vd7BKB.gif",
+            "anime": "Аниме: Чудачества любви не помеха"
+        },
+        {
+            "path": "data/interactables/cheek kiss/kAphud9x.gif",
+            "anime": "Аниме: Юру Юри"
+        },
+        {
+            "path": "data/interactables/cheek kiss/IRYI_RsYv.gif",
+            "anime": "Аниме: Старшая школа DxD"
+        },
+        {
+            "path": "data/interactables/cheek kiss/bxHnbQPJ.gif",
+            "anime": "Аниме: Поцелуй эти лепестки"
+        },
+        {
+            "path": "data/interactables/cheek kiss/iYwUWaDS.gif",
+            "anime": "Аниме: Семь смертных грехов"
+        },
+        {
+            "path": "data/interactables/cheek kiss/yhevOLMeV.gif",
+            "anime": "Аниме: Этот глупый свин"
+        },
+        {
+            "path": "data/interactables/cheek kiss/vs6hpx26.gif",
+            "anime": "Аниме: Мы ждём тебя летом"
+        },
+        {
+            "path": "data/interactables/cheek kiss/8UOIXzZlI.gif",
+            "anime": "Аниме: Чудачества любви не помеха"
+        },
+        {
+            "path": "data/interactables/cheek kiss/HZ6zMxBw.gif",
+            "anime": "Аниме: Кошечка из Сакурасо"
+        }
+    ],
+    "reject kiss": [
+        {
+            "path": "data/interactables/reject kiss/rZ8poeMB.gif",
+            "anime": "Аниме: Школа мертвецов"
+        },
+        {
+            "path": "data/interactables/reject kiss/YrxuZu9Y.gif",
+            "anime": "Аниме: Мобильный воин Гандам"
+        },
+        {
+            "path": "data/interactables/reject kiss/Jhoj7SmvF.gif",
+            "anime": "Аниме: Трогательный комплекс"
+        }
+    ],
+    "gun fight": [
+        {
+            "path": "data/interactables/gun fight/ez3znyG26.gif",
+            "anime": "Аниме: Убийца Акамэ!"
+        },
+        {
+            "path": "data/interactables/gun fight/haZ8nVjX.gif",
+            "anime": "Аниме: Пираты черной лагуны"
+        },
+        {
+            "path": "data/interactables/gun fight/-8MSCYyhY.gif",
+            "anime": "Аниме: Такт Опус. Судьба"
+        },
+        {
+            "path": "data/interactables/gun fight/omXX6jH9.gif",
+            "anime": "Аниме: Отступница Габриэль"
+        },
+        {
+            "path": "data/interactables/gun fight/Ln2paMDD.gif",
+            "anime": "Аниме: Ликорис Рикоил"
+        },
+        {
+            "path": "data/interactables/gun fight/55Y2HfU7.gif",
+            "anime": "Аниме: Мелочи жизни"
+        },
+        {
+            "path": "data/interactables/gun fight/-UmfJGCV.gif",
+            "anime": "Аниме: Клятвенный поцелуй"
+        },
+        {
+            "path": "data/interactables/gun fight/Vu8lDKyY.gif",
+            "anime": "Аниме: Оккультная девятка"
+        },
+        {
+            "path": "data/interactables/gun fight/SyNRBe71.gif",
+            "anime": "Аниме: Мастера меча онлайн"
+        },
+        {
+            "path": "data/interactables/gun fight/TgX88MVj.gif",
+            "anime": "Аниме: Код Гиас"
+        },
+        {
+            "path": "data/interactables/gun fight/aj_sJlb9W.gif",
+            "anime": "Аниме: Невероятные приключения ДжоДжо"
+        },
+        {
+            "path": "data/interactables/gun fight/96F_p5T_.gif",
+            "anime": "Аниме: Киберпанк: Бегущие по краю"
+        }
+    ]
+}

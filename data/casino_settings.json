@@ -1,0 +1,21 @@
+{
+  "slots": {
+    "symbols": {
+      "🍒": {"weight": 60, "payout": 2},
+      "🍋": {"weight": 45, "payout": 2},
+      "🍊": {"weight": 30, "payout": 3},
+      "⭐": {"weight": 8, "payout": 5},
+      "7️⃣": {"weight": 1, "payout": 20}
+    },
+    "jackpot_combination": ["7️⃣", "7️⃣", "7️⃣"],
+    "jackpot_payout": 500
+  },
+  "thimbles": {
+    "win_multiplier": 2
+  },
+  "blackjack": {
+    "min_bet": 10,
+    "max_bet": 1000,
+    "dealer_stop": 17
+  }
+}
