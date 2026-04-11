@@ -225,7 +225,7 @@ Petya_Ai/
 
 ## 📞 Контакты
 
-- **Разработчик**: FreshLend Studio
+- **Разработчик**: FreshLend Studio (@FreshGame1)
 - **Email**: freshlend.studio@gmail.com
 - **Сайт**: [https://freshlend.github.io](https://freshlend.github.io)
 - **Discord сервер**: [Присоединиться](https://discord.com/invite/95EyHeZmMz)
