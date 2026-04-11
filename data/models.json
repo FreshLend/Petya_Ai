@@ -1,57 +1,25 @@
 {
-  "OpenRouter: \"Trinity Mini\"": {
+  "OpenRouter: \"Free Models Router\"": {
     "type": "online",
-    "link": "arcee-ai/trinity-mini:free",
+    "link": "openrouter/free",
+    "default_temperature": 0.7,
+    "context_length": 200000,
+    "max_tokens": 8192,
+    "n_gpu_layers": -1
+  },
+  "OpenRouter: \"GLM 4.5 Air\"": {
+    "type": "online",
+    "link": "z-ai/glm-4.5-air:free",
     "default_temperature": 0.7,
     "context_length": 131072,
     "max_tokens": 8192,
     "n_gpu_layers": -1
   },
-  "OpenRouter: \"DeepSeek R1 0528\"": {
+  "OpenRouter: \"Trinity Large Preview\"": {
     "type": "online",
-    "link": "deepseek/deepseek-r1-0528:free",
+    "link": "arcee-ai/trinity-large-preview:free",
     "default_temperature": 0.7,
-    "context_length": 163840,
-    "max_tokens": 8192,
-    "n_gpu_layers": -1
-  },
-  "OpenRouter: \"Hermes 3 405B Instruct\"": {
-    "type": "online",
-    "link": "nousresearch/hermes-3-llama-3.1-405b:free",
-    "default_temperature": 0.7,
-    "context_length": 131072,
-    "max_tokens": 8192,
-    "n_gpu_layers": -1
-  },
-  "OpenRouter: \"Qwen3 Coder 480B A35B\"": {
-    "type": "online",
-    "link": "qwen/qwen3-coder:free",
-    "default_temperature": 0.7,
-    "context_length": 262000,
-    "max_tokens": 8192,
-    "n_gpu_layers": -1
-  },
-  "OpenRouter: \"Gemma 3 27B\"": {
-    "type": "online",
-    "link": "google/gemma-3-27b-it:free",
-    "default_temperature": 0.7,
-    "context_length": 131072,
-    "max_tokens": 8192,
-    "n_gpu_layers": -1
-  },
-  "OpenRouter: \"Nemotron 3 Nano 30B A3B\"": {
-    "type": "online",
-    "link": "nvidia/nemotron-3-nano-30b-a3b:free",
-    "default_temperature": 0.7,
-    "context_length": 256000,
-    "max_tokens": 8192,
-    "n_gpu_layers": -1
-  },
-  "OpenRouter: \"Gemini 2.0 Flash Experimental\"": {
-    "type": "online",
-    "link": "google/gemini-2.0-flash-exp:free",
-    "default_temperature": 0.7,
-    "context_length": 1048576,
+    "context_length": 131000,
     "max_tokens": 8192,
     "n_gpu_layers": -1
   },
