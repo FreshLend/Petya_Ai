@@ -7,33 +7,9 @@
     "max_tokens": 8192,
     "n_gpu_layers": -1
   },
-  "OpenRouter: \"GLM 4.5 Air\"": {
-    "type": "online",
-    "link": "z-ai/glm-4.5-air:free",
-    "default_temperature": 0.7,
-    "context_length": 131072,
-    "max_tokens": 8192,
-    "n_gpu_layers": -1
-  },
-  "OpenRouter: \"Trinity Large Preview\"": {
-    "type": "online",
-    "link": "arcee-ai/trinity-large-preview:free",
-    "default_temperature": 0.7,
-    "context_length": 131000,
-    "max_tokens": 8192,
-    "n_gpu_layers": -1
-  },
-  "Petya_Ai-IM2": {
+  "Example Model": {
     "type": "offline",
-    "path": "data/models/Petya_Ai-IM2.gguf",
-    "default_temperature": 0.7,
-    "context_length": 32768,
-    "max_tokens": 1024,
-    "n_gpu_layers": -1
-  },
-  "Petya_Ai-IM2.5": {
-    "type": "offline",
-    "path": "data/models/Petya_Ai-IM2.5.gguf",
+    "path": "data/models/example.gguf",
     "default_temperature": 0.7,
     "context_length": 32768,
     "max_tokens": 1024,
