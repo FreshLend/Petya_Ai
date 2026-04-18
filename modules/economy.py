@@ -1,5 +1,15 @@
-from discord.ui import Button, View, Modal, TextInput, Select
+import asyncio
+import json
+import math
+import os
+import random
+import discord
+import config
+from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Dict, List, Optional
+from discord import app_commands
+from discord.ui import Button, Modal, Select, TextInput, View
 
 def load_profiles():
     if not os.path.exists(config.PROFILES_FILE):
@@ -28,7 +38,7 @@ def load_models_config():
         return {}
     with open(config.MODELS_FILE, "r", encoding="utf-8") as f:
         return json.load(f)
-    
+
 def load_banks():
     if not os.path.exists(config.BANK_DATA_FILE):
         return {}
@@ -130,6 +140,190 @@ def load_casino_settings():
             json.dump(default_settings, f, indent=2, ensure_ascii=False)
         return default_settings
 
+class ChipConverter:
+    @staticmethod
+    def money_to_chips(money: Dict[str, int]) -> int:
+        chips = 0
+        chips += money.get("copper_coin", 0) // 1000
+        chips += money.get("silver_coin", 0) // 100
+        chips += money.get("gold_coin", 0)
+        chips += money.get("platinum_coin", 0) * 100
+        return chips
+    
+    @staticmethod
+    def chips_to_money(chips: int) -> Dict[str, int]:
+        money = {
+            "platinum_coin": 0,
+            "gold_coin": 0,
+            "silver_coin": 0,
+            "copper_coin": 0
+        }
+        
+        if chips >= 100:
+            money["platinum_coin"] = chips // 100
+            chips %= 100
+        
+        money["gold_coin"] = chips
+        chips = 0
+        
+        if money["gold_coin"] == 0 and chips == 0:
+            pass
+        
+        return money
+    
+    @staticmethod
+    def can_buy_chips(money: Dict[str, int], amount: int) -> bool:
+        total_copper_needed = amount * 1000
+        
+        total_copper_available = (
+            money.get("copper_coin", 0) +
+            money.get("silver_coin", 0) * 100 +
+            money.get("gold_coin", 0) * 1000 +
+            money.get("platinum_coin", 0) * 100000
+        )
+        
+        return total_copper_available >= total_copper_needed
+    
+    @staticmethod
+    def deduct_money_for_chips(money: Dict[str, int], amount: int) -> Dict[str, int]:
+        copper_needed = amount * 1000
+        
+        new_money = money.copy()
+        
+        if new_money.get("copper_coin", 0) >= copper_needed:
+            new_money["copper_coin"] -= copper_needed
+            return new_money
+        
+        copper_needed -= new_money.get("copper_coin", 0)
+        new_money["copper_coin"] = 0
+        
+        silver_needed = math.ceil(copper_needed / 100)
+        if new_money.get("silver_coin", 0) >= silver_needed:
+            new_money["silver_coin"] -= silver_needed
+            copper_needed -= silver_needed * 100
+            if copper_needed < 0:
+                new_money["copper_coin"] += abs(copper_needed)
+            return new_money
+        
+        copper_needed -= new_money.get("silver_coin", 0) * 100
+        new_money["silver_coin"] = 0
+        
+        gold_needed = math.ceil(copper_needed / 1000)
+        if new_money.get("gold_coin", 0) >= gold_needed:
+            new_money["gold_coin"] -= gold_needed
+            copper_needed -= gold_needed * 1000
+            if copper_needed < 0:
+                silver_change = abs(copper_needed) // 100
+                copper_change = abs(copper_needed) % 100
+                new_money["silver_coin"] += silver_change
+                new_money["copper_coin"] += copper_change
+            return new_money
+        
+        copper_needed -= new_money.get("gold_coin", 0) * 1000
+        new_money["gold_coin"] = 0
+        
+        platinum_needed = math.ceil(copper_needed / 100000)
+        new_money["platinum_coin"] -= platinum_needed
+        copper_needed -= platinum_needed * 100000
+        
+        if copper_needed < 0:
+            change = abs(copper_needed)
+            gold_change = change // 1000
+            change %= 1000
+            silver_change = change // 100
+            copper_change = change % 100
+            
+            new_money["gold_coin"] += gold_change
+            new_money["silver_coin"] += silver_change
+            new_money["copper_coin"] += copper_change
+        
+        return new_money
+
+class SlotsGame:
+    def __init__(self, settings: Dict):
+        self.settings = settings
+        self.symbols = list(settings["slots"]["symbols"].keys())
+        self.weights = [settings["slots"]["symbols"][s]["weight"] for s in self.symbols]
+        self.payouts = {s: settings["slots"]["symbols"][s]["payout"] for s in self.symbols}
+        self.jackpot_combination = settings["slots"]["jackpot_combination"]
+        self.jackpot_payout = settings["slots"]["jackpot_payout"]
+    
+    def spin(self) -> tuple:
+        result = random.choices(self.symbols, weights=self.weights, k=3)
+        
+        if result == self.jackpot_combination:
+            return result, self.jackpot_payout
+        
+        if result[0] == result[1] == result[2]:
+            return result, self.payouts[result[0]]
+        
+        if result[0] == result[1] or result[0] == result[2] or result[1] == result[2]:
+            for symbol in result:
+                if result.count(symbol) == 2:
+                    return result, self.payouts[symbol] // 2
+        
+        return result, 0
+
+class ThimblesGame:
+    def __init__(self, settings: Dict):
+        self.settings = settings
+        self.win_multiplier = settings["thimbles"]["win_multiplier"]
+    
+    def play(self, player_choice: int) -> tuple:
+        ball_position = random.randint(1, 3)
+        return player_choice == ball_position, ball_position
+
+class BlackjackGame:
+    def __init__(self, settings: Dict):
+        self.settings = settings
+        self.deck = self.create_deck()
+        self.shuffle_deck()
+    
+    def create_deck(self) -> List[str]:
+        ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
+        suits = ['♠', '♥', '♦', '♣']
+        deck = [f"{rank}{suit}" for suit in suits for rank in ranks]
+        return deck * 4
+    
+    def shuffle_deck(self):
+        random.shuffle(self.deck)
+    
+    def draw_card(self) -> str:
+        if len(self.deck) < 10:
+            self.deck = self.create_deck()
+            self.shuffle_deck()
+        return self.deck.pop()
+    
+    def card_value(self, card: str) -> int:
+        rank = card[:-1]
+        if rank in ['J', 'Q', 'K']:
+            return 10
+        elif rank == 'A':
+            return 11
+        else:
+            return int(rank)
+    
+    def calculate_hand_value(self, hand: List[str]) -> int:
+        value = 0
+        aces = 0
+        
+        for card in hand:
+            card_val = self.card_value(card)
+            if card_val == 11:
+                aces += 1
+            value += card_val
+        
+        while value > 21 and aces > 0:
+            value -= 10
+            aces -= 1
+        
+        return value
+    
+    def dealer_turn(self, dealer_hand: List[str]) -> List[str]:
+        while self.calculate_hand_value(dealer_hand) < self.settings["blackjack"]["dealer_stop"]:
+            dealer_hand.append(self.draw_card())
+        return dealer_hand
+
 class RepairButton(Button):
     def __init__(self, detector_id: str):
         super().__init__(
@@ -140,12 +334,13 @@ class RepairButton(Button):
         self.detector_id = detector_id
     
     async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
         inventory = load_inventory()
         user_id = str(interaction.user.id)
         profiles = load_profiles()
         
         if user_id not in inventory or self.detector_id not in inventory[user_id]:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 embed=discord.Embed(
                     title="❌ Ошибка",
                     description="Металлоискатель не найден!",
@@ -159,7 +354,7 @@ class RepairButton(Button):
         repair_cost = self.calculate_repair_cost(detector)
         
         if not self.has_enough_money(profiles[user_id]['money'], repair_cost):
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 embed=discord.Embed(
                     title="❌ Недостаточно денег",
                     description=f"Для починки нужно: {self.format_cost(repair_cost)}",
@@ -176,7 +371,7 @@ class RepairButton(Button):
         save_profiles(profiles)
         save_inventory(inventory)
         
-        await interaction.response.send_message(
+        await interaction.followup.send(
             embed=discord.Embed(
                 title="✅ Металлоискатель починен",
                 description=f"Ваш {detector['name']} полностью восстановлен!\n\nПотрачено: {self.format_cost(repair_cost)}",
@@ -213,7 +408,7 @@ class RepairButton(Button):
                 if available < needed:
                     if i > 0:
                         higher_currency = currency_order[i-1]
-                        exchange_rate = 100 if higher_currency == 'gold_coin' else 10  # Примерные курсы
+                        exchange_rate = 100 if higher_currency == 'gold_coin' else 10
                         
                         needed_higher = (needed - available + exchange_rate - 1) // exchange_rate
                         
@@ -239,6 +434,7 @@ class SearchButton(Button):
         self.location_id = location_id
     
     async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
         treasure_data = load_treasure_data()
         location = treasure_data.get(self.location_id, {})
         user_id = str(interaction.user.id)
@@ -251,7 +447,7 @@ class SearchButton(Button):
         
         required_level = location.get('required_level', 1)
         if profile.get("level", 1) < required_level:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 embed=discord.Embed(
                     title="❌ Недостаточный уровень",
                     description=f"Требуется уровень {required_level} (у вас {profile.get('level', 1)})",
@@ -281,7 +477,7 @@ class SearchButton(Button):
                 )
                 if detector_level:
                     embed.set_footer(text="Мысли: Мне кажется лучше обновить металлоискатель")
-                await interaction.response.send_message(embed=embed, ephemeral=True)
+                await interaction.followup.send(embed=embed, ephemeral=True)
                 return
             
             if best_detector.get('details', {}).get('durability', 1) <= 0:
@@ -291,7 +487,7 @@ class SearchButton(Button):
                     if item.get('sub_type') == 'metal_detector' and item.get('tool_level', 0) == best_detector.get('tool_level', 0)
                 )))
                 
-                await interaction.response.send_message(
+                await interaction.followup.send(
                     embed=discord.Embed(
                         title="💥 Металлоискатель сломан",
                         description="Ваш металлоискатель полностью вышел из строя и требует починки!",
@@ -358,7 +554,7 @@ class SearchButton(Button):
                         inline=False
                     )
                 
-                await interaction.response.send_message(embed=embed, ephemeral=True)
+                await interaction.followup.send(embed=embed, ephemeral=True)
                 return
         
         possible_items = location.get('possible_items', [])
@@ -414,7 +610,7 @@ class SearchButton(Button):
                 inline=False
             )
         
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
 
 class LocationSelector(Select):
     def __init__(self, locations: dict, current_location: str):
@@ -436,6 +632,7 @@ class LocationSelector(Select):
         self.locations = locations
     
     async def callback(self, interaction: discord.Interaction):
+        await interaction.response.defer()
         treasure_data = load_treasure_data()
         location = treasure_data.get(self.values[0], {})
         
@@ -471,7 +668,7 @@ class LocationSelector(Select):
         view.add_item(SearchButton(self.values[0]))
         view.add_item(LocationSelector(self.locations, self.values[0]))
         
-        await interaction.response.edit_message(embed=embed, view=view)
+        await interaction.edit_original_response(embed=embed, view=view)
 
 class BuyItemModal(Modal, title='Покупка предмета'):
     def __init__(self, item_id, item_name, max_quantity, price_info):
@@ -1049,11 +1246,12 @@ async def manage_item(interaction: discord.Interaction, item_id: str, action: st
             ephemeral=True)
 
 async def buy_pass(interaction: discord.Interaction):
+    await interaction.response.defer(ephemeral=True)
     profiles = load_profiles()
     user_id = str(interaction.user.id)
     
     if user_id not in profiles:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             embed=discord.Embed(
                 title="❌ Ошибка",
                 description="У вас нет профиля!",
@@ -1064,7 +1262,7 @@ async def buy_pass(interaction: discord.Interaction):
     
     profile = profiles[user_id]
     if profile.get("level", 1) < 15:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             embed=discord.Embed(
                 title="❌ Недостаточный уровень",
                 description="Вам нужно достичь 15 уровня!",
@@ -1080,7 +1278,7 @@ async def buy_pass(interaction: discord.Interaction):
                 f"{amount} {config.CURRENCY_EMOJIS.get(currency, currency)}")
     
     if insufficient_currencies:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             embed=discord.Embed(
                 title="❌ Недостаточно средств",
                 description=f"Не хватает: {', '.join(insufficient_currencies)}",
@@ -1095,7 +1293,7 @@ async def buy_pass(interaction: discord.Interaction):
     
     for item in inventory[user_id].values():
         if item.get("type") == "black_market_pass":
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 embed=discord.Embed(
                     title="❌ Ошибка",
                     description="У вас уже есть пропуск!",
@@ -1125,7 +1323,7 @@ async def buy_pass(interaction: discord.Interaction):
     save_profiles(profiles)
     save_inventory(inventory)
     
-    await interaction.response.send_message(
+    await interaction.followup.send(
         embed=discord.Embed(
             title="✅ Успешно",
             description=f"Вы купили пропуск на чёрный рынок за {format_price(config.BLACK_MARKET_PASS)}!",
@@ -1158,12 +1356,14 @@ async def restore_energy():
         if updated:
             save_profiles(profiles)
 
+
 async def show_item_details(interaction: discord.Interaction, item_id: str):
+    await interaction.response.defer(ephemeral=True)
     inventory = load_inventory()
     user_id = str(interaction.user.id)
     
     if user_id not in inventory or item_id not in inventory[user_id]:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             embed=discord.Embed(
                 title="❌ Ошибка",
                 description="Предмет не найден в инвентаре!",
@@ -1236,7 +1436,7 @@ async def show_item_details(interaction: discord.Interaction, item_id: str):
         text=f"Получен: {datetime.fromisoformat(item['obtained_at']).strftime('%d.%m.%Y %H:%M')}")
     
     view = InventoryView(item_id, item['name'], item.get("type"), item)
-    await interaction.response.send_message(embed=embed, view=view)
+    await interaction.followup.send(embed=embed, view=view)
 
 async def buy_item(interaction: discord.Interaction, item_id: str, quantity: int, price_info):
     try:
@@ -1434,190 +1634,6 @@ async def buy_item(interaction: discord.Interaction, item_id: str, quantity: int
             ),
             ephemeral=True)
 
-class ChipConverter:
-    @staticmethod
-    def money_to_chips(money: Dict[str, int]) -> int:
-        chips = 0
-        chips += money.get("copper_coin", 0) // 1000
-        chips += money.get("silver_coin", 0) // 100
-        chips += money.get("gold_coin", 0)
-        chips += money.get("platinum_coin", 0) * 100
-        return chips
-    
-    @staticmethod
-    def chips_to_money(chips: int) -> Dict[str, int]:
-        money = {
-            "platinum_coin": 0,
-            "gold_coin": 0,
-            "silver_coin": 0,
-            "copper_coin": 0
-        }
-        
-        if chips >= 100:
-            money["platinum_coin"] = chips // 100
-            chips %= 100
-        
-        money["gold_coin"] = chips
-        chips = 0
-        
-        if money["gold_coin"] == 0 and chips == 0:
-            pass
-        
-        return money
-    
-    @staticmethod
-    def can_buy_chips(money: Dict[str, int], amount: int) -> bool:
-        total_copper_needed = amount * 1000
-        
-        total_copper_available = (
-            money.get("copper_coin", 0) +
-            money.get("silver_coin", 0) * 100 +
-            money.get("gold_coin", 0) * 1000 +
-            money.get("platinum_coin", 0) * 100000
-        )
-        
-        return total_copper_available >= total_copper_needed
-    
-    @staticmethod
-    def deduct_money_for_chips(money: Dict[str, int], amount: int) -> Dict[str, int]:
-        copper_needed = amount * 1000
-        
-        new_money = money.copy()
-        
-        if new_money.get("copper_coin", 0) >= copper_needed:
-            new_money["copper_coin"] -= copper_needed
-            return new_money
-        
-        copper_needed -= new_money.get("copper_coin", 0)
-        new_money["copper_coin"] = 0
-        
-        silver_needed = math.ceil(copper_needed / 100)
-        if new_money.get("silver_coin", 0) >= silver_needed:
-            new_money["silver_coin"] -= silver_needed
-            copper_needed -= silver_needed * 100
-            if copper_needed < 0:
-                new_money["copper_coin"] += abs(copper_needed)
-            return new_money
-        
-        copper_needed -= new_money.get("silver_coin", 0) * 100
-        new_money["silver_coin"] = 0
-        
-        gold_needed = math.ceil(copper_needed / 1000)
-        if new_money.get("gold_coin", 0) >= gold_needed:
-            new_money["gold_coin"] -= gold_needed
-            copper_needed -= gold_needed * 1000
-            if copper_needed < 0:
-                silver_change = abs(copper_needed) // 100
-                copper_change = abs(copper_needed) % 100
-                new_money["silver_coin"] += silver_change
-                new_money["copper_coin"] += copper_change
-            return new_money
-        
-        copper_needed -= new_money.get("gold_coin", 0) * 1000
-        new_money["gold_coin"] = 0
-        
-        platinum_needed = math.ceil(copper_needed / 100000)
-        new_money["platinum_coin"] -= platinum_needed
-        copper_needed -= platinum_needed * 100000
-        
-        if copper_needed < 0:
-            change = abs(copper_needed)
-            gold_change = change // 1000
-            change %= 1000
-            silver_change = change // 100
-            copper_change = change % 100
-            
-            new_money["gold_coin"] += gold_change
-            new_money["silver_coin"] += silver_change
-            new_money["copper_coin"] += copper_change
-        
-        return new_money
-
-class SlotsGame:
-    def __init__(self, settings: Dict):
-        self.settings = settings
-        self.symbols = list(settings["slots"]["symbols"].keys())
-        self.weights = [settings["slots"]["symbols"][s]["weight"] for s in self.symbols]
-        self.payouts = {s: settings["slots"]["symbols"][s]["payout"] for s in self.symbols}
-        self.jackpot_combination = settings["slots"]["jackpot_combination"]
-        self.jackpot_payout = settings["slots"]["jackpot_payout"]
-    
-    def spin(self) -> tuple:
-        result = random.choices(self.symbols, weights=self.weights, k=3)
-        
-        if result == self.jackpot_combination:
-            return result, self.jackpot_payout
-        
-        if result[0] == result[1] == result[2]:
-            return result, self.payouts[result[0]]
-        
-        if result[0] == result[1] or result[0] == result[2] or result[1] == result[2]:
-            for symbol in result:
-                if result.count(symbol) == 2:
-                    return result, self.payouts[symbol] // 2
-        
-        return result, 0
-
-class ThimblesGame:
-    def __init__(self, settings: Dict):
-        self.settings = settings
-        self.win_multiplier = settings["thimbles"]["win_multiplier"]
-    
-    def play(self, player_choice: int) -> tuple:
-        ball_position = random.randint(1, 3)
-        return player_choice == ball_position, ball_position
-
-class BlackjackGame:
-    def __init__(self, settings: Dict):
-        self.settings = settings
-        self.deck = self.create_deck()
-        self.shuffle_deck()
-    
-    def create_deck(self) -> List[str]:
-        ranks = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A']
-        suits = ['♠', '♥', '♦', '♣']
-        deck = [f"{rank}{suit}" for suit in suits for rank in ranks]
-        return deck * 4
-    
-    def shuffle_deck(self):
-        random.shuffle(self.deck)
-    
-    def draw_card(self) -> str:
-        if len(self.deck) < 10:
-            self.deck = self.create_deck()
-            self.shuffle_deck()
-        return self.deck.pop()
-    
-    def card_value(self, card: str) -> int:
-        rank = card[:-1]
-        if rank in ['J', 'Q', 'K']:
-            return 10
-        elif rank == 'A':
-            return 11
-        else:
-            return int(rank)
-    
-    def calculate_hand_value(self, hand: List[str]) -> int:
-        value = 0
-        aces = 0
-        
-        for card in hand:
-            card_val = self.card_value(card)
-            if card_val == 11:
-                aces += 1
-            value += card_val
-        
-        while value > 21 and aces > 0:
-            value -= 10
-            aces -= 1
-        
-        return value
-    
-    def dealer_turn(self, dealer_hand: List[str]) -> List[str]:
-        while self.calculate_hand_value(dealer_hand) < self.settings["blackjack"]["dealer_stop"]:
-            dealer_hand.append(self.draw_card())
-        return dealer_hand
-
 @bot.tree.command(name="bank", description="Управление банком или просмотр баланса")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.user_install()
@@ -1646,18 +1662,19 @@ async def bank_command(
     set_service: Optional[float] = None,
     new_name: Optional[str] = None
 ):
+    await interaction.response.defer()
     profiles = load_profiles()
     banks = load_banks()
     user_id = str(interaction.user.id)
     
     if user_id not in profiles:
-        await interaction.response.send_message("❌ У вас нет профиля!", ephemeral=True)
+        await interaction.followup.send("❌ У вас нет профиля!", ephemeral=True)
         return
     
     if action is None:
         current_bank = profiles[user_id].get("bank")
         if not current_bank or current_bank not in banks:
-            await interaction.response.send_message("❌ У вас нет активного банка!", ephemeral=True)
+            await interaction.followup.send("❌ У вас нет активного банка!", ephemeral=True)
             return
         
         ensure_client_dict_format(banks, current_bank, user_id)
@@ -1677,28 +1694,28 @@ async def bank_command(
             money_values.append(f"{emoji} `{client_data.get(currency, 0)}`")
         
         embed.description = "\n".join(money_values)
-        await interaction.response.send_message(embed=embed, ephemeral=False)
+        await interaction.followup.send(embed=embed, ephemeral=False)
         return
     
     action_value = action.value if action else None
     
     if action_value == "create":
         if not name:
-            await interaction.response.send_message("❌ Укажите название банка!", ephemeral=True)
+            await interaction.followup.send("❌ Укажите название банка!", ephemeral=True)
             return
             
         user_banks = [b for b in banks.values() if b["owner_id"] == user_id]
         if len(user_banks) >= 3:
-            await interaction.response.send_message("❌ У вас уже максимальное количество банков (3)!", ephemeral=True)
+            await interaction.followup.send("❌ У вас уже максимальное количество банков (3)!", ephemeral=True)
             return
             
         if profiles[user_id]["money"]["gold_coin"] < 10:
             gold_emoji = config.CURRENCY_EMOJIS.get("gold_coin", "")
-            await interaction.response.send_message(f"❌ Для создания банка нужно 10 {gold_emoji}!", ephemeral=True)
+            await interaction.followup.send(f"❌ Для создания банка нужно 10 {gold_emoji}!", ephemeral=True)
             return
             
         if name in banks:
-            await interaction.response.send_message("❌ Банк с таким названием уже существует!", ephemeral=True)
+            await interaction.followup.send("❌ Банк с таким названием уже существует!", ephemeral=True)
             return
             
         banks[name] = {
@@ -1713,7 +1730,7 @@ async def bank_command(
         save_profiles(profiles)
         save_banks(banks)
         
-        await interaction.response.send_message(f"✅ Банк '{name}' успешно создан!", ephemeral=True)
+        await interaction.followup.send(f"✅ Банк '{name}' успешно создан!", ephemeral=True)
     
     elif action_value == "list":
         embed = discord.Embed(title="Список банков", color=discord.Color.blue())
@@ -1729,84 +1746,84 @@ async def bank_command(
                     inline=False
                 )
         
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
     
     elif action_value == "rename":
         if not name or not new_name:
-            await interaction.response.send_message("❌ Укажите текущее и новое название банка!", ephemeral=True)
+            await interaction.followup.send("❌ Укажите текущее и новое название банка!", ephemeral=True)
             return
             
         if name not in banks:
-            await interaction.response.send_message("❌ Банк не найден!", ephemeral=True)
+            await interaction.followup.send("❌ Банк не найден!", ephemeral=True)
             return
             
         if banks[name]["owner_id"] != user_id:
-            await interaction.response.send_message("❌ Вы не владелец этого банка!", ephemeral=True)
+            await interaction.followup.send("❌ Вы не владелец этого банка!", ephemeral=True)
             return
             
         if new_name in banks:
-            await interaction.response.send_message("❌ Банк с таким названием уже существует!", ephemeral=True)
+            await interaction.followup.send("❌ Банк с таким названием уже существует!", ephemeral=True)
             return
             
         banks[new_name] = banks.pop(name)
         save_banks(banks)
         
-        await interaction.response.send_message(f"✅ Банк успешно переименован в '{new_name}'!", ephemeral=True)
+        await interaction.followup.send(f"✅ Банк успешно переименован в '{new_name}'!", ephemeral=True)
     
     elif action_value == "set_comission":
         if not name or set_comission is None:
-            await interaction.response.send_message("❌ Укажите название банка и размер комиссии!", ephemeral=True)
+            await interaction.followup.send("❌ Укажите название банка и размер комиссии!", ephemeral=True)
             return
             
         if name not in banks:
-            await interaction.response.send_message("❌ Банк не найден!", ephemeral=True)
+            await interaction.followup.send("❌ Банк не найден!", ephemeral=True)
             return
             
         if banks[name]["owner_id"] != user_id:
-            await interaction.response.send_message("❌ Вы не владелец этого банка!", ephemeral=True)
+            await interaction.followup.send("❌ Вы не владелец этого банка!", ephemeral=True)
             return
             
         if set_comission < 0 or set_comission > 50:
-            await interaction.response.send_message("❌ Комиссия должна быть от 0% до 50%!", ephemeral=True)
+            await interaction.followup.send("❌ Комиссия должна быть от 0% до 50%!", ephemeral=True)
             return
             
         banks[name]["comission"] = set_comission
         save_banks(banks)
         
-        await interaction.response.send_message(f"✅ Комиссия банка '{name}' установлена на {set_comission}%!", ephemeral=True)
+        await interaction.followup.send(f"✅ Комиссия банка '{name}' установлена на {set_comission}%!", ephemeral=True)
     
     elif action_value == "set_service":
         if not name or set_service is None:
-            await interaction.response.send_message("❌ Укажите название банка и размер обслуживания!", ephemeral=True)
+            await interaction.followup.send("❌ Укажите название банка и размер обслуживания!", ephemeral=True)
             return
             
         if name not in banks:
-            await interaction.response.send_message("❌ Банк не найден!", ephemeral=True)
+            await interaction.followup.send("❌ Банк не найден!", ephemeral=True)
             return
             
         if banks[name]["owner_id"] != user_id:
-            await interaction.response.send_message("❌ Вы не владелец этого банка!", ephemeral=True)
+            await interaction.followup.send("❌ Вы не владелец этого банка!", ephemeral=True)
             return
             
         if set_service < 0 or set_service > 20:
-            await interaction.response.send_message("❌ Обслуживание должно быть от 0% до 20%!", ephemeral=True)
+            await interaction.followup.send("❌ Обслуживание должно быть от 0% до 20%!", ephemeral=True)
             return
             
         banks[name]["service"] = set_service
         save_banks(banks)
         
-        await interaction.response.send_message(f"✅ Обслуживание банка '{name}' установлено на {set_service}%!", ephemeral=True)
+        await interaction.followup.send(f"✅ Обслуживание банка '{name}' установлено на {set_service}%!", ephemeral=True)
     
     elif action_value == "info":
         if not name:
             current_bank = profiles[user_id].get("bank")
             if not current_bank or current_bank not in banks:
-                await interaction.response.send_message("❌ Укажите название банка или установите активный банк!", ephemeral=True)
+                await interaction.followup.send("❌ Укажите название банка или установите активный банк!", ephemeral=True)
                 return
             name = current_bank
             
         if name not in banks:
-            await interaction.response.send_message("❌ Банк не найден!", ephemeral=True)
+            await interaction.followup.send("❌ Банк не найден!", ephemeral=True)
             return
             
         bank_data = banks[name]
@@ -1832,10 +1849,10 @@ async def bank_command(
         embed.add_field(name="Дата создания", value=datetime.fromisoformat(bank_data["created_at"]).strftime('%d.%m.%Y %H:%M'), inline=False)
         embed.add_field(name="Ваш баланс", value=balance_text, inline=False)
         
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
     
     else:
-        await interaction.response.send_message("❌ Неизвестное действие! Доступные действия: create, list, rename, set_comission, set_service, info", ephemeral=True)
+        await interaction.followup.send("❌ Неизвестное действие! Доступные действия: create, list, rename, set_comission, set_service, info", ephemeral=True)
 
 @bot.tree.command(name="deposit", description="Внести деньги на свой банковский счет")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -1857,25 +1874,26 @@ async def deposit_command(
     amount: int,
     currency: app_commands.Choice[str]
 ):
+    await interaction.response.defer(ephemeral=True)
     profiles = load_profiles()
     banks = load_banks()
     user_id = str(interaction.user.id)
     
     if user_id not in profiles:
-        await interaction.response.send_message("❌ У вас нет профиля!", ephemeral=True)
+        await interaction.followup.send("❌ У вас нет профиля!", ephemeral=True)
         return
         
     current_bank = profiles[user_id].get("bank")
     if not current_bank or current_bank not in banks:
-        await interaction.response.send_message("❌ У вас нет активного банка!", ephemeral=True)
+        await interaction.followup.send("❌ У вас нет активного банка!", ephemeral=True)
         return
         
     if amount <= 0:
-        await interaction.response.send_message("❌ Сумма должна быть положительной!", ephemeral=True)
+        await interaction.followup.send("❌ Сумма должна быть положительной!", ephemeral=True)
         return
         
     if profiles[user_id]["money"][currency.value] < amount:
-        await interaction.response.send_message(f"❌ Недостаточно {currency.name.lower()} для депозита!", ephemeral=True)
+        await interaction.followup.send(f"❌ Недостаточно {currency.name.lower()} для депозита!", ephemeral=True)
         return
     
     ensure_client_dict_format(banks, current_bank, user_id)
@@ -1894,7 +1912,7 @@ async def deposit_command(
     save_profiles(profiles)
     save_banks(banks)
     
-    await interaction.response.send_message(
+    await interaction.followup.send(
         f"✅ Успешно внесено {amount} {currency.name.lower()} в ваш банк '{current_bank}'!",
         ephemeral=True
     )
@@ -1927,8 +1945,9 @@ async def exchange_command(
     from_currency: app_commands.Choice[str],
     to_currency: app_commands.Choice[str]
 ):
+    await interaction.response.defer()
     if amount <= 0:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             "❌ Количество для обмена должно быть положительным!",
             ephemeral=True
         )
@@ -1938,7 +1957,7 @@ async def exchange_command(
     user_id = str(interaction.user.id)
     
     if user_id not in profiles:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             "❌ У вас нет профиля! Сначала создайте его командой `/profile create:True`.",
             ephemeral=True
         )
@@ -1958,7 +1977,7 @@ async def exchange_command(
     to_curr = currency_map[to_currency.value]
     
     if money[from_curr] < amount:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"❌ У вас недостаточно {from_currency.name.lower()} для обмена!",
             ephemeral=True
         )
@@ -1971,7 +1990,7 @@ async def exchange_command(
     if from_index < to_index:
         rate = 100 ** (to_index - from_index)
         if amount % rate != 0:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 f"❌ Для обмена в {to_currency.name.lower()} количество {from_currency.name.lower()} должно быть кратно {rate}!",
                 ephemeral=True
             )
@@ -2019,17 +2038,18 @@ async def exchange_command(
         inline=False
     )
     
-    await interaction.response.send_message(embed=embed)
+    await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name="inventory", description="Просмотр инвентаря")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.user_install()
 async def inventory_command(interaction: discord.Interaction):
+    await interaction.response.defer()
     inventory = load_inventory()
     user_id = str(interaction.user.id)
     
     if user_id not in inventory or not inventory[user_id]:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             embed=discord.Embed(
                 title="🎒 Ваш инвентарь",
                 description="Ваш инвентарь пуст!",
@@ -2049,7 +2069,7 @@ async def inventory_command(interaction: discord.Interaction):
         short_name = item['name'][:20] + '...' if len(item['name']) > 20 else item['name']
         view.add_item(InventoryItemButton(item_id, short_name))
     
-    await interaction.response.send_message(embed=embed, view=view)
+    await interaction.followup.send(embed=embed, view=view)
 
 @bot.tree.command(name="profile", description="Просмотр или создание профиля")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -2059,12 +2079,13 @@ async def profile_command(
     user: Optional[discord.User] = None,
     create: bool = False
 ):
+    await interaction.response.defer()
     professions = load_professions()
     profiles = load_profiles()
 
     if create:
         if user:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "❌ Нельзя использовать `create` с указанием пользователя!",
                 ephemeral=True
             )
@@ -2072,7 +2093,7 @@ async def profile_command(
         
         user_id = str(interaction.user.id)
         if user_id in profiles:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "❌ У вас уже есть профиль!",
                 ephemeral=True
             )
@@ -2099,7 +2120,7 @@ async def profile_command(
             "last_energy_update": datetime.now().isoformat()
         }
         save_profiles(profiles)
-        await interaction.response.send_message("✅ Ваш профиль успешно создан!", ephemeral=True)
+        await interaction.followup.send("✅ Ваш профиль успешно создан!", ephemeral=True)
         return
 
     target_user = user or interaction.user
@@ -2107,12 +2128,12 @@ async def profile_command(
     
     if user_id not in profiles:
         if user:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 f"❌ У пользователя {target_user.mention} нет профиля!",
                 ephemeral=True
             )
         else:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "❌ У вас нет профиля! Используйте `/profile create:True` чтобы создать.",
                 ephemeral=True
             )
@@ -2190,28 +2211,29 @@ async def profile_command(
     created_at = datetime.fromisoformat(profile["created_at"])
     embed.set_footer(text=f"Профиль создан: {created_at.strftime('%d.%m.%Y %H:%M')}")
 
-    await interaction.response.send_message(embed=embed)
+    await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name="set_bank", description="Выбрать банк для обслуживания")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.user_install()
 @app_commands.describe(name="Название банка")
 async def set_bank_command(interaction: discord.Interaction, name: str):
+    await interaction.response.defer(ephemeral=True)
     profiles = load_profiles()
     banks = load_banks()
     user_id = str(interaction.user.id)
     
     if user_id not in profiles:
-        await interaction.response.send_message("❌ У вас нет профиля!", ephemeral=True)
+        await interaction.followup.send("❌ У вас нет профиля!", ephemeral=True)
         return
         
     if name not in banks:
-        await interaction.response.send_message("❌ Банк не найден!", ephemeral=True)
+        await interaction.followup.send("❌ Банк не найден!", ephemeral=True)
         return
     
     current_bank = profiles[user_id].get("bank")
     if current_bank == name:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"ℹ️ Вы уже находитесь в банке '{name}'!",
             ephemeral=True
         )
@@ -2229,7 +2251,7 @@ async def set_bank_command(interaction: discord.Interaction, name: str):
     save_profiles(profiles)
     save_banks(banks)
     
-    await interaction.response.send_message(
+    await interaction.followup.send(
         f"✅ Вы успешно выбрали банк '{name}' для обслуживания!",
         ephemeral=True
     )
@@ -2246,8 +2268,9 @@ async def set_group_command(
     user: discord.User,
     group: Literal["разработчик", "тестер", "покупатель", "пользователь"]
 ):
+    await interaction.response.defer(ephemeral=True)
     if not hasattr(config, 'ALLOWED_ID') or interaction.user.id not in config.ALLOWED_ID:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             "❌ У вас нет прав для этой команды!",
             ephemeral=True
         )
@@ -2257,7 +2280,7 @@ async def set_group_command(
     user_id = str(user.id)
     
     if user_id not in profiles:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"❌ У пользователя {user.mention} нет профиля!",
             ephemeral=True
         )
@@ -2266,7 +2289,7 @@ async def set_group_command(
     profiles[user_id]["group"] = group
     save_profiles(profiles)
     
-    await interaction.response.send_message(
+    await interaction.followup.send(
         f"✅ Группа пользователя {user.mention} изменена на `{group}`!",
         ephemeral=True
     )
@@ -2275,11 +2298,12 @@ async def set_group_command(
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.user_install()
 async def shop_command(interaction: discord.Interaction, black_store: bool = False):
+    await interaction.response.defer()
     profiles = load_profiles()
     user_id = str(interaction.user.id)
     
     if user_id not in profiles:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             embed=discord.Embed(
                 title="❌ Ошибка",
                 description="У вас нет профиля!",
@@ -2293,7 +2317,7 @@ async def shop_command(interaction: discord.Interaction, black_store: bool = Fal
     has_pass = any(item.get("type") == "black_market_pass" for item in inventory.values())
     
     if black_store and not has_pass:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             embed=discord.Embed(
                 title="❌ Доступ запрещен",
                 description="У вас нет доступа к черному рынку!",
@@ -2302,19 +2326,19 @@ async def shop_command(interaction: discord.Interaction, black_store: bool = Fal
             ephemeral=True)
         return
     
-    await interaction.response.defer()
     await show_shop_categories(interaction, black_store)
 
 @bot.tree.command(name="treasure", description="Поиск сокровищ в различных локациях")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.user_install()
 async def treasure_command(interaction: discord.Interaction):
+    await interaction.response.defer()
     treasure_data = load_treasure_data()
     profiles = load_profiles()
     user_id = str(interaction.user.id)
     
     if user_id not in profiles:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             embed=discord.Embed(
                 title="❌ Нет профиля",
                 description="У вас нет профиля! Создайте его командой `/profile create:True`",
@@ -2334,7 +2358,7 @@ async def treasure_command(interaction: discord.Interaction):
     }
     
     if not available_locations:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             embed=discord.Embed(
                 title="❌ Нет доступных локаций",
                 description="У вас недостаточный уровень для доступа к любым локациям!",
@@ -2381,7 +2405,7 @@ async def treasure_command(interaction: discord.Interaction):
     if len(available_locations) > 1:
         view.add_item(LocationSelector(available_locations, first_loc_id))
     
-    await interaction.response.send_message(embed=embed, view=view)
+    await interaction.followup.send(embed=embed, view=view)
 
 @bot.tree.command(name="transfer", description="Перевести деньги другому пользователю")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -2405,32 +2429,33 @@ async def transfer_command(
     currency: app_commands.Choice[str],
     user: discord.User
 ):
+    await interaction.response.defer(ephemeral=True)
     profiles = load_profiles()
     banks = load_banks()
     user_id = str(interaction.user.id)
     target_user_id = str(user.id)
     
     if user_id not in profiles:
-        await interaction.response.send_message("❌ У вас нет профиля!", ephemeral=True)
+        await interaction.followup.send("❌ У вас нет профиля!", ephemeral=True)
         return
         
     if target_user_id not in profiles:
-        await interaction.response.send_message("❌ У получателя нет профиля!", ephemeral=True)
+        await interaction.followup.send("❌ У получателя нет профиля!", ephemeral=True)
         return
         
     if amount <= 0:
-        await interaction.response.send_message("❌ Сумма должна быть положительной!", ephemeral=True)
+        await interaction.followup.send("❌ Сумма должна быть положительной!", ephemeral=True)
         return
     
     sender_bank = profiles[user_id].get("bank")
     receiver_bank = profiles[target_user_id].get("bank")
     
     if not sender_bank or sender_bank not in banks:
-        await interaction.response.send_message("❌ У вас нет активного банка!", ephemeral=True)
+        await interaction.followup.send("❌ У вас нет активного банка!", ephemeral=True)
         return
         
     if not receiver_bank or receiver_bank not in banks:
-        await interaction.response.send_message("❌ У получателя нет активного банка!", ephemeral=True)
+        await interaction.followup.send("❌ У получателя нет активного банка!", ephemeral=True)
         return
     
     ensure_client_dict_format(banks, sender_bank, user_id)
@@ -2441,7 +2466,7 @@ async def transfer_command(
     sender_balance = banks[sender_bank]["clients"][user_id]
     
     if sender_balance.get(currency.value, 0) < amount:
-        await interaction.response.send_message(f"❌ Недостаточно {currency.name.lower()} на вашем счету!", ephemeral=True)
+        await interaction.followup.send(f"❌ Недостаточно {currency.name.lower()} на вашем счету!", ephemeral=True)
         return
     
     is_bank_owner = (banks[sender_bank]["owner_id"] == user_id)
@@ -2479,7 +2504,7 @@ async def transfer_command(
     total_to_deduct = amount + total_main_comission
     
     if sender_balance.get(currency.value, 0) < total_to_deduct:
-        await interaction.response.send_message(f"❌ Недостаточно средств с учетом комиссии!", ephemeral=True)
+        await interaction.followup.send(f"❌ Недостаточно средств с учетом комиссии!", ephemeral=True)
         return
     
     sender_balance[currency.value] -= total_to_deduct
@@ -2521,13 +2546,13 @@ async def transfer_command(
             fractional_name = next(c.name for c in transfer_command._params['currency'].choices if c.value == fractional_currency)
             comission_msg.append(f"{total_fractional_comission} {fractional_name.lower()}")
         
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"✅ Успешно переведено {amount} {currency.name.lower()} пользователю {user.mention}!\n"
             f"Комиссия: {' + '.join(comission_msg)}",
             ephemeral=True
         )
     else:
-        await interaction.response.send_message(
+        await interaction.followup.send(
             f"✅ Успешно переведено {amount} {currency.name.lower()} пользователю {user.mention} (без комиссии)!",
             ephemeral=True
         )
@@ -2552,21 +2577,22 @@ async def withdraw_command(
     amount: int,
     currency: app_commands.Choice[str]
 ):
+    await interaction.response.defer(ephemeral=True)
     profiles = load_profiles()
     banks = load_banks()
     user_id = str(interaction.user.id)
     
     if user_id not in profiles:
-        await interaction.response.send_message("❌ У вас нет профиля!", ephemeral=True)
+        await interaction.followup.send("❌ У вас нет профиля!", ephemeral=True)
         return
         
     current_bank = profiles[user_id].get("bank")
     if not current_bank or current_bank not in banks:
-        await interaction.response.send_message("❌ У вас нет активного банка!", ephemeral=True)
+        await interaction.followup.send("❌ У вас нет активного банка!", ephemeral=True)
         return
         
     if amount <= 0:
-        await interaction.response.send_message("❌ Сумма должна быть положительной!", ephemeral=True)
+        await interaction.followup.send("❌ Сумма должна быть положительной!", ephemeral=True)
         return
     
     ensure_client_dict_format(banks, current_bank, user_id)
@@ -2580,7 +2606,7 @@ async def withdraw_command(
         }
     
     if banks[current_bank]["clients"][user_id].get(currency.value, 0) < amount:
-        await interaction.response.send_message(f"❌ Недостаточно {currency.name.lower()} на вашем счету!", ephemeral=True)
+        await interaction.followup.send(f"❌ Недостаточно {currency.name.lower()} на вашем счету!", ephemeral=True)
         return
         
     banks[current_bank]["clients"][user_id][currency.value] -= amount
@@ -2592,7 +2618,7 @@ async def withdraw_command(
     save_profiles(profiles)
     save_banks(banks)
     
-    await interaction.response.send_message(
+    await interaction.followup.send(
         f"✅ Успешно снято {amount} {currency.name.lower()} из вашего банка '{current_bank}'!",
         ephemeral=True
     )
@@ -2602,6 +2628,7 @@ async def withdraw_command(
 @app_commands.user_install()
 async def work_command(interaction: discord.Interaction, profession_list: bool = False):
     if profession_list:
+        await interaction.response.defer()
         professions = load_professions()
         embed = discord.Embed(
             title="📊 Доступные профессии",
@@ -2627,7 +2654,7 @@ async def work_command(interaction: discord.Interaction, profession_list: bool =
                 inline=False
             )
         
-        await interaction.response.send_message(embed=embed)
+        await interaction.followup.send(embed=embed)
         return
 
     button = discord.ui.Button(style=discord.ButtonStyle.green, label="Работать")
@@ -2652,11 +2679,12 @@ async def work_command(interaction: discord.Interaction, profession_list: bool =
     message = await interaction.original_response()
     
     async def process_work(interaction: discord.Interaction, edit: bool = False):
+        await interaction.response.defer()
         profiles = load_profiles()
         user_id = str(interaction.user.id)
         
         if user_id not in profiles:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "❌ У вас нет профиля! Используйте `/profile create:True` чтобы создать.",
                 ephemeral=True
             )
@@ -2676,7 +2704,7 @@ async def work_command(interaction: discord.Interaction, profession_list: bool =
         energy_cost = prof_data["energy_cost"]
         
         if profile.get("energy", max_energy) < energy_cost:
-            await interaction.response.send_message(
+            await interaction.followup.send(
                 "❌ Вы слишком устали! Отдохните немного.",
                 ephemeral=True
             )
@@ -2858,13 +2886,12 @@ async def work_command(interaction: discord.Interaction, profession_list: bool =
         button.disabled = (profile["energy"] < energy_cost)
         
         if edit:
-            await interaction.response.edit_message(
-                content="",
+            await interaction.followup.edit(
                 embed=embed,
                 view=view
             )
         else:
-            await interaction.response.send_message(embed=embed, view=view)
+            await interaction.followup.send(embed=embed, view=view)
 
 @bot.tree.command(name="casino", description="Казино с различными играми")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -3248,6 +3275,7 @@ async def casino_command(
             
             @discord.ui.button(label="Взять карту", style=discord.ButtonStyle.primary, emoji="🃏")
             async def hit(self, interaction: discord.Interaction, button: discord.ui.Button):
+                await interaction.response.defer()
                 self.player_hand.append(self.game.draw_card())
                 player_value = self.game.calculate_hand_value(self.player_hand)
                 
@@ -3258,6 +3286,7 @@ async def casino_command(
             
             @discord.ui.button(label="Остановиться", style=discord.ButtonStyle.secondary, emoji="✋")
             async def stand(self, interaction: discord.Interaction, button: discord.ui.Button):
+                await interaction.response.defer()
                 self.standing = True
                 await self.end_game(interaction, "stand")
             
@@ -3293,7 +3322,7 @@ async def casino_command(
                 if not final:
                     embed.set_footer(text="Выберите действие:")
                 
-                await interaction.response.edit_message(embed=embed, view=self if not final else None)
+                await interaction.edit_original_response(embed=embed, view=self if not final else None)
             
             async def end_game(self, interaction: discord.Interaction, reason: str):
                 profiles = load_profiles()

@@ -958,9 +958,39 @@ async def reload_all_plugins():
     
     await asyncio.sleep(0.5)
     
-    await load_all_plugins_and_modules()
+    plugins = plugin_api.scan_plugins()
+    available_plugins = {p.metadata.id: p for p in plugins}
     
-    print("✅ Перезагрузка завершена!")
+    for plugin in plugins:
+        if plugin.metadata.id not in plugin_api.plugins:
+            plugin_api.register_plugin(plugin)
+    
+    loaded_plugins_set = set()
+    max_attempts = len(plugins) * 2
+    attempts = 0
+    
+    while len(loaded_plugins_set) < len(plugins) and attempts < max_attempts:
+        attempts += 1
+        made_progress = False
+        
+        for plugin in plugins:
+            if plugin.metadata.id in loaded_plugins_set:
+                continue
+            
+            if plugin.metadata.dependencies:
+                deps_ok, _ = DependencyResolver.check_dependencies(plugin, available_plugins)
+                if not deps_ok:
+                    continue
+            
+            success = await load_plugin_async(plugin, 0, available_plugins)
+            if success:
+                loaded_plugins_set.add(plugin.metadata.id)
+                made_progress = True
+        
+        if not made_progress:
+            break
+    
+    print(f"✅ Перезагрузка плагинов завершена! Загружено: {len(loaded_plugins_set)}/{len(plugins)}")
 
 @bot.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
