@@ -602,63 +602,45 @@ class FeedbackModal(discord.ui.Modal, title="Оставить отзыв/про�
             )
 
 def convert_integral_expression(expr: str) -> str:
-    expr = expr.replace('∫', 'integrate(')
-    expr = expr.replace(' dt', ', (t, 0, x))')
-    expr = expr.replace(' d' + expr.split('d')[-1].split()[0], ')')
-
-    if '∫(' in expr and ' to ' in expr and ') dt' in expr:
-        start_idx = expr.find('∫(') + 1
-        end_idx = expr.find(') dt') + 1
-        if start_idx < end_idx:
-            integral_part = expr[start_idx:end_idx]
-            parts = integral_part.replace('∫(', '').replace(') dt', '').split(' to ')
+    import re
+    pattern = r'∫\(([^)]+)\)\s+d([a-zA-Z])'
+    match = re.search(pattern, expr)
+    if match:
+        inner = match.group(1)
+        var = match.group(2)
+        if ' to ' in inner:
+            parts = inner.split(' to ')
             if len(parts) == 2:
                 func = parts[0].strip()
-                limits = parts[1].strip().split()
-                var = 't'
-                if len(limits) >= 2:
-                    var = limits[-1]
-                    upper_limit = limits[0]
-                else:
-                    upper_limit = limits[0]
-                    var = 't'
-
-                new_expr = f"integrate({func}, ({var}, 0, {upper_limit}))"
-                expr = expr.replace(integral_part, new_expr)
-
+                upper = parts[1].strip()
+                new_expr = f"integrate({func}, ({var}, 0, {upper}))"
+                return expr[:match.start()] + new_expr + expr[match.end():]
+    expr = re.sub(r'∫\s*([a-zA-Z0-9\(\)\+\-\*\/\^]+)\s+d([a-zA-Z])', r'integrate(\1, \2)', expr)
     return expr
 
 def convert_limit_expression(expr: str) -> str:
+    import re
     expr = expr.replace('lim', 'limit')
     expr = expr.replace('→', ', ')
     expr = expr.replace('->', ', ')
-
-    if 'limit(' in expr and expr.count('limit(') == 1:
-        start_idx = expr.find('limit(')
-        count = 0
-        for i in range(start_idx, len(expr)):
-            if expr[i] == '(':
-                count += 1
-            elif expr[i] == ')':
-                count -= 1
-                if count == 0:
-                    limit_part = expr[start_idx:i+1]
-                    inner = limit_part[6:-1]
-
-                    if ',' in inner:
-                        parts = inner.split(',')
-                        if len(parts) >= 2:
-                            expr_part = parts[0].strip()
-                            var_part = parts[1].strip()
-                            if len(parts) > 2:
-                                value_part = parts[2].strip()
-                            else:
-                                value_part = '0'
-
-                            new_limit = f"limit({expr_part}, {var_part}, {value_part})"
-                            expr = expr.replace(limit_part, new_limit)
-                    break
-
+    pattern = r'limit\s*\{\s*([a-zA-Z])\s*->\s*([^}]+)\s*\}\s*(.+)'
+    match = re.search(pattern, expr)
+    if match:
+        var = match.group(1)
+        point = match.group(2).strip()
+        func = match.group(3).strip()
+        return f"limit({func}, {var}, {point})"
+    pattern2 = r'limit\s*\(\s*([^,]+)\s*,\s*([a-zA-Z]+)\s*,\s*([^)]+)\s*\)'
+    match2 = re.search(pattern2, expr)
+    if match2:
+        return expr
+    pattern3 = r'limit\s*\(\s*([^,]+)\s*,\s*([a-zA-Z]+)\s*->\s*([^)]+)\s*\)'
+    match3 = re.search(pattern3, expr)
+    if match3:
+        func = match3.group(1)
+        var = match3.group(2)
+        point = match3.group(3)
+        return f"limit({func}, {var}, {point})"
     return expr
 
 def convert_greek_symbols(expr: str) -> str:
@@ -669,7 +651,8 @@ def convert_greek_symbols(expr: str) -> str:
         'ξ': 'xi', 'Ξ': 'Xi', 'π': 'pi', 'Π': 'Pi', 'ρ': 'rho', 'σ': 'sigma',
         'Σ': 'Sigma', 'τ': 'tau', 'υ': 'upsilon', 'φ': 'phi', 'Φ': 'Phi',
         'χ': 'chi', 'ψ': 'psi', 'Ψ': 'Psi', 'ω': 'omega', 'Ω': 'Omega',
-        '∞': 'oo', '∂': 'diff', '∇': 'nabla', 'ℏ': 'hbar'
+        '∞': 'oo', '∂': 'diff', '∇': 'nabla', 'ℏ': 'hbar',
+        'α': 'alpha', 'β': 'beta'
     }
     for symbol, replacement in greek_symbols.items():
         expr = expr.replace(symbol, replacement)
@@ -682,17 +665,15 @@ def evaluate_expression(expr: str, var: str = 'x'):
         try:
             expr_sym = sympify(expr_clean, locals={var: x, 'gamma': gamma})
             if expr_sym.free_symbols:
-                sample_point = 1.0
                 try:
-                    f = lambdify(x, expr_sym, 'numpy')
-                    result_value = f(sample_point)
+                    f = lambdify(x, expr_sym, modules='math')
                     return f"f({var}) = {latex(expr_sym)}"
                 except:
                     return latex(expr_sym)
             else:
                 result_value = float(expr_sym)
                 return format_number(result_value)
-        except Exception as sympy_error:
+        except Exception:
             safe_dict = create_safe_dict()
             result = eval(expr_clean, {"__builtins__": {}}, safe_dict)
             if isinstance(result, (int, float, complex)):
@@ -850,7 +831,7 @@ def format_number(num):
         return str(num)
     if abs(num) > 1e12 or (abs(num) < 1e-6 and abs(num) > 0):
         return f"{num:.10e}".replace('e+', 'e').replace('e-', 'e-').replace('e0', '')
-    if num.is_integer():
+    if hasattr(num, 'is_integer') and num.is_integer():
         return str(int(num))
     formatted = f"{num:.15f}".rstrip('0').rstrip('.')
     if len(formatted) > 15:
@@ -1204,9 +1185,8 @@ async def calc(interaction: discord.Interaction, expression: str, precision: int
                 'arccos': lambda x: math.acos(x), 'arctan': lambda x: math.atan(x),
                 'ln': lambda x: math.log(x), 'log': lambda x: math.log10(x),
                 'log2': lambda x: math.log2(x), 'exp': lambda x: math.exp(x),
-                'abs': lambda x: abs(x), '|': lambda x: abs(x),
-                'floor': lambda x: math.floor(x), 'ceil': lambda x: math.ceil(x),
-                'round': lambda x: round(x),
+                'abs': lambda x: abs(x), 'floor': lambda x: math.floor(x),
+                'ceil': lambda x: math.ceil(x), 'round': lambda x: round(x),
                 'factorial': lambda x: math.factorial(int(x)) if x >= 0 and x == int(x) else float('nan'),
                 '!': lambda x: math.factorial(int(x)) if x >= 0 and x == int(x) else float('nan'),
                 'rad': lambda x: math.radians(x), 'deg': lambda x: math.degrees(x),
@@ -1226,14 +1206,16 @@ async def calc(interaction: discord.Interaction, expression: str, precision: int
             expr = expr.lower().replace(' ', '')
             expr = expr.replace('pi', 'π').replace('tau', 'τ').replace('phi', 'φ')
             expr = expr.replace('×', '*').replace('÷', '/').replace('√', 'sqrt')
-            expr = expr.replace('(-', '(0-').replace(',-', ',0-')
-            if expr.startswith('-'):
-                expr = '0' + expr
             expr = re.sub(r'(\d)(\()', r'\1*\2', expr)
-            expr = re.sub(r'(\d)([a-zφπτ√|])', r'\1*\2', expr)
+            expr = re.sub(r'(\d)([a-zφπτ√])', r'\1*\2', expr)
             expr = re.sub(r'\)\(', ')*(', expr)
             expr = re.sub(r'([πτφ])(\d)', r'\1*\2', expr)
             expr = re.sub(r'([πτφ])(\()', r'\1*\2', expr)
+            expr = re.sub(r'\(-', '(0-', expr)
+            expr = re.sub(r',-', ',0-', expr)
+            expr = re.sub(r'(\d)e([+-]?\d+)', r'\1e\2', expr)
+            if expr.startswith('-'):
+                expr = '0' + expr
             return expr
         def tokenize(self, expr: str) -> list:
             tokens = []
@@ -1245,14 +1227,17 @@ async def calc(interaction: discord.Interaction, expression: str, precision: int
                     continue
                 if char.isdigit() or char == '.':
                     num = ''
-                    while i < len(expr) and (expr[i].isdigit() or expr[i] == '.'):
+                    while i < len(expr) and (expr[i].isdigit() or expr[i] == '.' or expr[i] == 'e' or expr[i] == 'E'):
                         num += expr[i]
                         i += 1
+                        if (expr[i-1] == 'e' or expr[i-1] == 'E') and i < len(expr) and expr[i] in '+-':
+                            num += expr[i]
+                            i += 1
                     tokens.append(('number', float(num)))
                     continue
-                if char.isalpha() or char in 'πτφ√|':
+                if char.isalpha() or char in 'πτφ√':
                     name = ''
-                    while i < len(expr) and (expr[i].isalpha() or expr[i] in 'πτφ√|'):
+                    while i < len(expr) and (expr[i].isalpha() or expr[i] in 'πτφ√'):
                         name += expr[i]
                         i += 1
                     if name in self.constants:
@@ -2070,7 +2055,7 @@ async def info(interaction: discord.Interaction, short_info: bool = False):
         embed.add_field(name="🖥 Серверов:", value=str(guild_count), inline=False)
         embed.add_field(name="👥 Участников:", value=str(human_count), inline=False)
         embed.add_field(name="🔨 Дата создания:", value="<t:1691321400:F>", inline=False)
-        embed.add_field(name="🛠 Версия:", value="2.6.0", inline=False)
+        embed.add_field(name="🛠 Версия:", value="2.6.1", inline=False)
         embed.add_field(name="<:petya_ai:1387518848961482842> Модель:", value="Petya_Ai-IM2\n**Бета версия:** Petya_Ai-IM2.5", inline=False)
         embed.add_field(name="⏱ Задержка:", value=f"{ping}мс", inline=False)
         embed.add_field(name="🕒 Время работы:", value=f"<t:{unix_time}:F> - <t:{unix_time}:R>", inline=False)
@@ -2097,6 +2082,8 @@ async def invite(interaction: discord.Interaction):
     await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name="math", description="Вычислить математическое выражение")
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@app_commands.user_install()
 @app_commands.describe(
     expression="Математическое выражение для вычисления (без f(x)=)",
     mode="Режим вычисления",

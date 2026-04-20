@@ -324,6 +324,77 @@ class BlackjackGame:
             dealer_hand.append(self.draw_card())
         return dealer_hand
 
+def add_item_to_inventory(user_id: str, item_template: dict, quantity: int = 1):
+    inventory = load_inventory()
+    if user_id not in inventory:
+        inventory[user_id] = {}
+    user_inv = inventory[user_id]
+    
+    def normalize_for_match(data):
+        if isinstance(data, dict):
+            return json.dumps(data, sort_keys=True)
+        return data
+    
+    match_fields = (
+        item_template.get('type'),
+        item_template.get('sub_type'),
+        item_template.get('tool_level'),
+        item_template.get('name'),
+        item_template.get('description'),
+        normalize_for_match(item_template.get('price', {})),
+        normalize_for_match(item_template.get('effects', {})),
+        item_template.get('duration'),
+        normalize_for_match(item_template.get('requirements', {})),
+        item_template.get('sold'),
+        item_template.get('use'),
+        item_template.get('delete'),
+        item_template.get('unpack'),
+        normalize_for_match(item_template.get('details', {}))
+    )
+    
+    for existing_id, existing_item in user_inv.items():
+        existing_match = (
+            existing_item.get('type'),
+            existing_item.get('sub_type'),
+            existing_item.get('tool_level'),
+            existing_item.get('name'),
+            existing_item.get('description'),
+            normalize_for_match(existing_item.get('price', {})),
+            normalize_for_match(existing_item.get('effects', {})),
+            existing_item.get('duration'),
+            normalize_for_match(existing_item.get('requirements', {})),
+            existing_item.get('sold'),
+            existing_item.get('use'),
+            existing_item.get('delete'),
+            existing_item.get('unpack'),
+            normalize_for_match(existing_item.get('details', {}))
+        )
+        if match_fields == existing_match:
+            existing_item['quantity'] = existing_item.get('quantity', 1) + quantity
+            save_inventory(inventory)
+            return existing_id
+    
+    new_id = f"{item_template.get('name', 'item')}_{int(datetime.now().timestamp())}_{random.randint(1000,9999)}"
+    new_item = item_template.copy()
+    new_item['quantity'] = quantity
+    new_item['obtained_at'] = datetime.now().isoformat()
+    inventory[user_id][new_id] = new_item
+    save_inventory(inventory)
+    return new_id
+
+def remove_item_from_inventory(user_id: str, item_id: str, quantity: int) -> bool:
+    inventory = load_inventory()
+    if user_id not in inventory or item_id not in inventory[user_id]:
+        return False
+    item = inventory[user_id][item_id]
+    current_qty = item.get('quantity', 1)
+    if quantity >= current_qty:
+        del inventory[user_id][item_id]
+    else:
+        item['quantity'] = current_qty - quantity
+    save_inventory(inventory)
+    return True
+
 class RepairButton(Button):
     def __init__(self, detector_id: str):
         super().__init__(
@@ -460,14 +531,15 @@ class SearchButton(Button):
         detector_required = location.get('detector_required', False)
         detector_level = location.get('detector_level')
         best_detector = None
+        best_detector_id = None
         
         if detector_required:
-            best_detector = next(
-                (item for item_id, item in user_inventory.items() 
-                 if item.get('sub_type') == 'metal_detector' and 
-                    (detector_level is None or item.get('tool_level', 0) >= detector_level)),
-                None
-            )
+            for item_id, item in user_inventory.items():
+                if item.get('sub_type') == 'metal_detector':
+                    if detector_level is None or item.get('tool_level', 0) >= detector_level:
+                        if best_detector is None or item.get('tool_level', 0) > best_detector.get('tool_level', 0):
+                            best_detector = item
+                            best_detector_id = item_id
             
             if not best_detector:
                 embed = discord.Embed(
@@ -482,10 +554,7 @@ class SearchButton(Button):
             
             if best_detector.get('details', {}).get('durability', 1) <= 0:
                 view = View(timeout=120)
-                view.add_item(RepairButton(next(
-                    item_id for item_id, item in user_inventory.items() 
-                    if item.get('sub_type') == 'metal_detector' and item.get('tool_level', 0) == best_detector.get('tool_level', 0)
-                )))
+                view.add_item(RepairButton(best_detector_id))
                 
                 await interaction.followup.send(
                     embed=discord.Embed(
@@ -499,14 +568,17 @@ class SearchButton(Button):
                 return
         
         base_chance = location.get('base_chance', 0.1)
+        
         if best_detector:
-            detector_level = best_detector.get('tool_level', 1)
-            base_chance *= (1 + detector_level * 0.3)
+            detector_level_value = best_detector.get('tool_level', 1)
+            level_multiplier = 1 + (detector_level_value - 1) * 0.3
+            base_chance *= level_multiplier
             
             durability = best_detector.get('details', {}).get('durability', 1000)
             max_durability = best_detector.get('max_durability', 1000)
-            durability_factor = durability / max_durability
-            base_chance *= durability_factor
+            durability_percent = durability / max_durability
+            durability_bonus = -0.5 + (durability_percent * 0.9)
+            base_chance *= (1 + durability_bonus)
         
         event_type = random.choices(
             ["positive", "negative", "neutral"],
@@ -522,6 +594,8 @@ class SearchButton(Button):
         
         if "chance_multiplier" in event:
             base_chance *= event["chance_multiplier"]
+        
+        base_chance = max(0.05, min(0.95, base_chance))
         
         durability_change = 0
         if best_detector:
@@ -563,37 +637,34 @@ class SearchButton(Button):
             weights=[item.get('chance', 1) for item in possible_items]
         )[0]
         
-        item_id = f"{selected_item.get('type', 'item')}_{int(datetime.now().timestamp())}"
-        
-        full_inventory.setdefault(user_id, {})[item_id] = {
+        item_template = {
             "type": selected_item.get('type', 'item'),
             "name": selected_item.get('name', 'Предмет'),
             "description": selected_item.get('description', ''),
             "price": selected_item.get('price', 0),
             "effects": selected_item.get('effects', {}),
-            "obtained_at": datetime.now().isoformat(),
             "sold": selected_item.get('sold', True),
             "use": selected_item.get('use', False),
             "delete": selected_item.get('delete', True),
             "unpack": selected_item.get('unpack', False),
             "requirements": selected_item.get('requirements', {}),
-            "quantity": selected_item.get('quantity', 1),
             "duration": selected_item.get('duration', 'infinity')
         }
+        
+        quantity = selected_item.get('quantity', 1)
+        add_item_to_inventory(user_id, item_template, quantity)
         
         broken_text = ""
         if best_detector:
             durability_loss = random.randint(10, 25)
-            best_detector['details']['durability'] = max(0, 
-                best_detector['details'].get('durability', 1000) - durability_loss + durability_change
-            )
+            new_durability = max(0, best_detector['details'].get('durability', 1000) - durability_loss + durability_change)
+            best_detector['details']['durability'] = new_durability
             
-            if best_detector['details']['durability'] <= 0:
+            if new_durability <= 0:
                 broken_text = "\n\n💥 Ваш металлоискатель сломался!"
             
             full_inventory[user_id] = user_inventory
-        
-        save_inventory(full_inventory)
+            save_inventory(full_inventory)
         
         embed = discord.Embed(
             title=f"🎉 Найдено: {selected_item.get('name', 'Предмет')}",
@@ -1097,12 +1168,10 @@ async def manage_item(interaction: discord.Interaction, item_id: str, action: st
             )
             return
         
-        if available_quantity > quantity:
-            inventory[user_id][item_id]["quantity"] -= quantity
-        else:
-            del inventory[user_id][item_id]
+        if not remove_item_from_inventory(user_id, item_id, quantity):
+            await interaction.followup.send("❌ Ошибка при удалении предмета", ephemeral=True)
+            return
         
-        save_inventory(inventory)
         save_profiles(profiles)
         
         await interaction.followup.send(
@@ -1143,13 +1212,11 @@ async def manage_item(interaction: discord.Interaction, item_id: str, action: st
         else:
             profiles[user_id]["money"]["gold_coin"] = profiles[user_id]["money"].get("gold_coin", 0) + total_price
         
-        if available_quantity > quantity:
-            inventory[user_id][item_id]["quantity"] -= quantity
-        else:
-            del inventory[user_id][item_id]
+        if not remove_item_from_inventory(user_id, item_id, quantity):
+            await interaction.followup.send("❌ Ошибка при удалении предмета", ephemeral=True)
+            return
         
         save_profiles(profiles)
-        save_inventory(inventory)
         
         await interaction.followup.send(
             embed=discord.Embed(
@@ -1160,12 +1227,9 @@ async def manage_item(interaction: discord.Interaction, item_id: str, action: st
             ephemeral=True)
     
     elif action == "delete":
-        if available_quantity > quantity:
-            inventory[user_id][item_id]["quantity"] -= quantity
-        else:
-            del inventory[user_id][item_id]
-        
-        save_inventory(inventory)
+        if not remove_item_from_inventory(user_id, item_id, quantity):
+            await interaction.followup.send("❌ Ошибка при удалении предмета", ephemeral=True)
+            return
         
         await interaction.followup.send(
             embed=discord.Embed(
@@ -1205,36 +1269,30 @@ async def manage_item(interaction: discord.Interaction, item_id: str, action: st
                 continue
             
             total_quantity = content_quantity * quantity
-            new_item_id = f"{content_id}_{int(datetime.now().timestamp())}"
-            
-            if user_id not in inventory:
-                inventory[user_id] = {}
-                
-            inventory[user_id][new_item_id] = {
+            content_template = {
                 "type": content_item.get("type", "item"),
                 "name": content_item["name"],
                 "description": content_item.get("description", ""),
                 "price": content_item.get("price", 0),
-                "quantity": total_quantity,
                 "effects": content_item.get("effects", {}),
                 "duration": content_item.get("duration", "infinity"),
-                "obtained_at": datetime.now().isoformat(),
                 "requirements": content_item.get("requirements", {}),
-                "sold": content_item.get("sold", True)
+                "sold": content_item.get("sold", True),
+                "use": content_item.get("use", True),
+                "delete": content_item.get("delete", True),
+                "unpack": content_item.get("unpack", True)
             }
             
+            add_item_to_inventory(user_id, content_template, total_quantity)
             added_items.append(f"{content_item['name']} x{total_quantity}")
         
         if not added_items:
             await interaction.followup.send("❌ Набор пуст или его содержимое не найдено!", ephemeral=True)
             return
         
-        if available_quantity > quantity:
-            inventory[user_id][item_id]["quantity"] -= quantity
-        else:
-            del inventory[user_id][item_id]
-        
-        save_inventory(inventory)
+        if not remove_item_from_inventory(user_id, item_id, quantity):
+            await interaction.followup.send("❌ Ошибка при удалении набора", ephemeral=True)
+            return
         
         await interaction.followup.send(
             embed=discord.Embed(
@@ -1305,12 +1363,10 @@ async def buy_pass(interaction: discord.Interaction):
     for currency, amount in config.BLACK_MARKET_PASS.items():
         profile["money"][currency] = profile["money"].get(currency, 0) - amount
     
-    item_id = f"pass_{int(datetime.now().timestamp())}"
-    inventory[user_id][item_id] = {
+    item_template = {
         "type": "black_market_pass",
         "name": "Пропуск на чёрный рынок",
         "description": "Даёт доступ к чёрному рынку",
-        "obtained_at": datetime.now().isoformat(),
         "price": 0,
         "sold": False,
         "delete": False,
@@ -1319,9 +1375,9 @@ async def buy_pass(interaction: discord.Interaction):
             "level": 15
         }
     }
+    add_item_to_inventory(user_id, item_template, 1)
     
     save_profiles(profiles)
-    save_inventory(inventory)
     
     await interaction.followup.send(
         embed=discord.Embed(
@@ -1355,7 +1411,6 @@ async def restore_energy():
         
         if updated:
             save_profiles(profiles)
-
 
 async def show_item_details(interaction: discord.Interaction, item_id: str):
     await interaction.response.defer(ephemeral=True)
@@ -1503,7 +1558,7 @@ async def buy_item(interaction: discord.Interaction, item_id: str, quantity: int
                     tools_to_remove.append(item_key)
 
             for item_key in tools_to_remove:
-                del user_inventory[item_key]
+                remove_item_from_inventory(user_id, item_key, user_inventory[item_key].get('quantity', 1))
 
         item_requirements = item_found.get("requirements", {})
         required_level = item_requirements.get("level", 0)
@@ -1572,11 +1627,6 @@ async def buy_item(interaction: discord.Interaction, item_id: str, quantity: int
         else:
             profile["money"]["gold_coin"] -= total_price
 
-        if user_id not in inventory:
-            inventory[user_id] = {}
-
-        new_item_id = f"{item_id}_{int(datetime.now().timestamp())}"
-        
         if item_found.get("type") == "tools":
             inventory_price = price_info if isinstance(price_info, dict) else price_info
         else:
@@ -1585,17 +1635,15 @@ async def buy_item(interaction: discord.Interaction, item_id: str, quantity: int
             else:
                 inventory_price = int(price_info * 0.5)
         
-        inventory[user_id][new_item_id] = {
+        item_template = {
             "type": item_found.get("type", "item"),
             "sub_type": item_found.get("sub_type", ""),
             "tool_level": item_found.get("tool_level", 0),
             "name": item_found["name"],
             "description": item_found.get("description", ""),
             "price": inventory_price,
-            "quantity": quantity,
             "effects": item_found.get("effects", {}),
             "duration": item_found.get("duration", "infinity"),
-            "obtained_at": datetime.now().isoformat(),
             "requirements": item_found.get("requirements", {}),
             "sold": item_found.get("sold", True),
             "use": item_found.get("use", True),
@@ -1603,6 +1651,8 @@ async def buy_item(interaction: discord.Interaction, item_id: str, quantity: int
             "unpack": item_found.get("unpack", True),
             "details": item_found.get("details", {})
         }
+        
+        add_item_to_inventory(user_id, item_template, quantity)
 
         if item_found.get("quantity", "∞") != "∞":
             for category in shop_data.get("categories", {}).values():
@@ -1613,7 +1663,6 @@ async def buy_item(interaction: discord.Interaction, item_id: str, quantity: int
                     break
         
         save_profiles(profiles)
-        save_inventory(inventory)
         save_shop(shop_data)
         
         await interaction.followup.send(
@@ -2657,37 +2706,63 @@ async def work_command(interaction: discord.Interaction, profession_list: bool =
         await interaction.followup.send(embed=embed)
         return
 
-    button = discord.ui.Button(style=discord.ButtonStyle.green, label="Работать")
+    await interaction.response.defer()
+    profiles = load_profiles()
+    user_id = str(interaction.user.id)
     
-    async def button_callback(button_interaction: discord.Interaction):
-        if button_interaction.user.id != interaction.user.id:
-            await button_interaction.response.send_message("❌ Это не ваша кнопка!", ephemeral=True)
-            return
-
-        await process_work(button_interaction, edit=True)
+    if user_id not in profiles:
+        await interaction.followup.send(
+            embed=discord.Embed(
+                title="❌ Ошибка",
+                description="У вас нет профиля! Используйте `/profile create:True` чтобы создать.",
+                color=discord.Color.red()
+            ),
+            ephemeral=True
+        )
+        return
     
-    button.callback = button_callback
+    profile = profiles[user_id]
+    max_energy = profile.get("max_energy", 100)
+    energy_cost = load_professions().get(profile.get("profession", "Бездомный"), {}).get("energy_cost", 10)
     
-    view = discord.ui.View()
-    view.add_item(button)
-
-    await interaction.response.send_message(
-        content="Нажмите кнопку ниже, чтобы работать:",
-        view=view
+    if profile.get("energy", max_energy) < energy_cost:
+        embed = discord.Embed(
+            title="❌ Недостаточно энергии",
+            description=f"У вас {profile.get('energy', max_energy)}/{max_energy} энергии. Нужно {energy_cost}.",
+            color=discord.Color.red()
+        )
+        await interaction.followup.send(embed=embed, ephemeral=True)
+        return
+    
+    work_button = WorkButton(user_id)
+    view = View(timeout=120)
+    view.add_item(work_button)
+    
+    embed = discord.Embed(
+        title="💼 Работа",
+        description=f"Нажмите кнопку, чтобы работать как **{profile.get('profession', 'Бездомный')}**\nЭнергии достаточно: {profile.get('energy', max_energy)}/{max_energy}",
+        color=discord.Color.blue()
     )
-
-    message = await interaction.original_response()
     
-    async def process_work(interaction: discord.Interaction, edit: bool = False):
+    await interaction.followup.send(embed=embed, view=view)
+
+class WorkButton(Button):
+    def __init__(self, user_id: str):
+        super().__init__(label="Работать", style=discord.ButtonStyle.green, emoji="💼")
+        self.user_id = user_id
+    
+    async def callback(self, interaction: discord.Interaction):
+        if str(interaction.user.id) != self.user_id:
+            await interaction.response.send_message("❌ Это не ваша кнопка!", ephemeral=True)
+            return
+        
         await interaction.response.defer()
+        
         profiles = load_profiles()
         user_id = str(interaction.user.id)
         
         if user_id not in profiles:
-            await interaction.followup.send(
-                "❌ У вас нет профиля! Используйте `/profile create:True` чтобы создать.",
-                ephemeral=True
-            )
+            await interaction.followup.send("❌ Профиль не найден!", ephemeral=True)
             return
         
         profile = profiles[user_id]
@@ -2704,10 +2779,12 @@ async def work_command(interaction: discord.Interaction, profession_list: bool =
         energy_cost = prof_data["energy_cost"]
         
         if profile.get("energy", max_energy) < energy_cost:
-            await interaction.followup.send(
-                "❌ Вы слишком устали! Отдохните немного.",
-                ephemeral=True
+            embed = discord.Embed(
+                title="❌ Недостаточно энергии",
+                description=f"У вас {profile.get('energy', max_energy)}/{max_energy} энергии. Нужно {energy_cost}.",
+                color=discord.Color.red()
             )
+            await interaction.edit_original_response(embed=embed, view=None)
             return
         
         profile["energy"] = max(0, profile.get("energy", max_energy) - energy_cost)
@@ -2807,15 +2884,15 @@ async def work_command(interaction: discord.Interaction, profession_list: bool =
                 money_info.append(f"{currency_emoji} {amount}")
         
         embed = discord.Embed(
-            title=f"💼 Результаты работы:",
+            title=f"💼 Результаты работы",
             color=discord.Color.green() if event_type == "positive" else 
                  discord.Color.red() if event_type == "negative" else 
                  discord.Color.blue()
         )
-
+        
         embed.add_field(
-            name="",
-            value=f"Вы работали как: {prof_data['emoji']} {current_profession}",
+            name="Профессия",
+            value=f"{prof_data['emoji']} {current_profession}",
             inline=False
         )
         
@@ -2844,14 +2921,13 @@ async def work_command(interaction: discord.Interaction, profession_list: bool =
             value=f"{profile['energy']}/{max_energy}\n{energy_bar}",
             inline=False
         )
-
+        
         if exp_multiplier > 1 or money_multiplier > 1:
             bonus_info = []
             if exp_multiplier > 1:
                 bonus_info.append(f"Множитель опыта: x{exp_multiplier}")
             if money_multiplier > 1:
                 bonus_info.append(f"Множитель денег: x{money_multiplier}")
-            
             embed.add_field(
                 name="⚡ Активные бонусы",
                 value="\n".join(bonus_info),
@@ -2859,17 +2935,9 @@ async def work_command(interaction: discord.Interaction, profession_list: bool =
             )
         
         if energy_change > 0:
-            embed.add_field(
-                name="",
-                value=f"🔋 Получено +{energy_change} энергии",
-                inline=False
-            )
+            embed.add_field(name="", value=f"🔋 Получено +{energy_change} энергии", inline=False)
         elif energy_change < 0:
-            embed.add_field(
-                name="",
-                value=f"💢 Потеряно {abs(energy_change)} энергии",
-                inline=False
-            )
+            embed.add_field(name="", value=f"💢 Потеряно {abs(energy_change)} энергии", inline=False)
         
         if level_up:
             embed.set_footer(text="🎉 Поздравляем с повышением уровня!")
@@ -2878,20 +2946,18 @@ async def work_command(interaction: discord.Interaction, profession_list: bool =
             new_prof_data = professions[new_profession]
             embed.add_field(
                 name="🎩 Новая профессия!",
-                value=f"Теперь вы **{new_profession}** {new_prof_data['emoji']}\n"
-                     f"Доступно с {new_prof_data['min_level']} уровня",
+                value=f"Теперь вы **{new_profession}** {new_prof_data['emoji']}\nДоступно с {new_prof_data['min_level']} уровня",
                 inline=False
             )
         
-        button.disabled = (profile["energy"] < energy_cost)
-        
-        if edit:
-            await interaction.followup.edit(
-                embed=embed,
-                view=view
-            )
+        new_energy_cost = load_professions().get(profile.get("profession", "Бездомный"), {}).get("energy_cost", 10)
+        if profile["energy"] >= new_energy_cost:
+            new_button = WorkButton(user_id)
+            new_view = View(timeout=120)
+            new_view.add_item(new_button)
+            await interaction.edit_original_response(embed=embed, view=new_view)
         else:
-            await interaction.followup.send(embed=embed, view=view)
+            await interaction.edit_original_response(embed=embed, view=None)
 
 @bot.tree.command(name="casino", description="Казино с различными играми")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
