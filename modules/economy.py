@@ -7,7 +7,7 @@ import discord
 import config
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Literal
 from discord import app_commands
 from discord.ui import Button, Modal, Select, TextInput, View
 
@@ -739,7 +739,7 @@ class LocationSelector(Select):
         view.add_item(SearchButton(self.values[0]))
         view.add_item(LocationSelector(self.locations, self.values[0]))
         
-        await interaction.edit_original_response(embed=embed, view=view)
+        await interaction.message.edit(embed=embed, view=view)
 
 class BuyItemModal(Modal, title='Покупка предмета'):
     def __init__(self, item_id, item_name, max_quantity, price_info):
@@ -1055,10 +1055,29 @@ class BackToCategoriesButton(Button):
             emoji="⬅️"
         )
         self.black_store = black_store
-    
+
     async def callback(self, interaction: discord.Interaction):
-        await interaction.response.defer()
-        await show_shop_categories(interaction, self.black_store, interaction.message)
+        shop_data = load_shop()
+        categories = shop_data.get("categories", {})
+
+        embed = discord.Embed(
+            title="🔮 Категории чёрного рынка" if self.black_store else "🏪 Категории магазина",
+            description="Выберите категорию для просмотра товаров",
+            color=discord.Color.dark_purple() if self.black_store else discord.Color.blue()
+        ).set_thumbnail(url=interaction.user.display_avatar.url)
+
+        view = View(timeout=180)
+        view.add_item(CategorySelect(categories, self.black_store))
+
+        profiles = load_profiles()
+        user_id = str(interaction.user.id)
+        inventory = load_inventory().get(user_id, {})
+        has_pass = any(item.get("type") == "black_market_pass" for item in inventory.values())
+
+        if not self.black_store and profiles.get(user_id, {}).get("level", 1) >= 15 and not has_pass:
+            view.add_item(BuyPassButton())
+
+        await interaction.response.edit_message(embed=embed, view=view)
 
 async def show_shop_categories(interaction: discord.Interaction, black_store=False, message=None):
     shop_data = load_shop()
@@ -1240,17 +1259,16 @@ async def manage_item(interaction: discord.Interaction, item_id: str, action: st
             ephemeral=True)
     
     elif action == "unpack" and item.get("type") == "bundle":
-        shop_data = load_shop()
-        bundle_contents = None
-        
-        for category in shop_data.get("categories", {}).values():
-            for shop_item_id, shop_item in category.get("items", {}).items():
-                if shop_item_id in item_id:
-                    if "contains" in shop_item:
+        bundle_contents = item.get("contains")
+        if not bundle_contents:
+            shop_data = load_shop()
+            for cat in shop_data.get("categories", {}).values():
+                for shop_id, shop_item in cat.get("items", {}).items():
+                    if shop_item.get("name") == item["name"] and "contains" in shop_item:
                         bundle_contents = shop_item["contains"]
                         break
-            if bundle_contents:
-                break
+                if bundle_contents:
+                    break
         
         if not bundle_contents:
             await interaction.followup.send("❌ Не удалось найти содержимое этого набора!", ephemeral=True)
@@ -2484,6 +2502,13 @@ async def transfer_command(
     user_id = str(interaction.user.id)
     target_user_id = str(user.id)
     
+    currency_names = {
+        "copper_coin": "медные монеты",
+        "silver_coin": "серебряные монеты",
+        "gold_coin": "золотые монеты",
+        "platinum_coin": "платиновые монеты"
+    }
+    
     if user_id not in profiles:
         await interaction.followup.send("❌ У вас нет профиля!", ephemeral=True)
         return
@@ -2508,14 +2533,17 @@ async def transfer_command(
         return
     
     ensure_client_dict_format(banks, sender_bank, user_id)
-    
     if user_id not in banks[sender_bank]["clients"]:
         banks[sender_bank]["clients"][user_id] = create_empty_balance()
+    
+    for coin_key in currency_names.keys():
+        if coin_key not in banks[sender_bank]["clients"][user_id]:
+            banks[sender_bank]["clients"][user_id][coin_key] = 0
     
     sender_balance = banks[sender_bank]["clients"][user_id]
     
     if sender_balance.get(currency.value, 0) < amount:
-        await interaction.followup.send(f"❌ Недостаточно {currency.name.lower()} на вашем счету!", ephemeral=True)
+        await interaction.followup.send(f"❌ Недостаточно {currency_names[currency.value]} на вашем счету!", ephemeral=True)
         return
     
     is_bank_owner = (banks[sender_bank]["owner_id"] == user_id)
@@ -2558,10 +2586,20 @@ async def transfer_command(
     
     sender_balance[currency.value] -= total_to_deduct
     
-    ensure_client_dict_format(banks, receiver_bank, target_user_id)
+    if fractional_currency and total_fractional_comission == fractional_amount and fractional_amount > 0:
+        if sender_balance.get(fractional_currency, 0) >= fractional_amount:
+            sender_balance[fractional_currency] -= fractional_amount
+        else:
+            await interaction.followup.send(f"❌ Ошибка при списании дробной комиссии!", ephemeral=True)
+            return
     
+    ensure_client_dict_format(banks, receiver_bank, target_user_id)
     if target_user_id not in banks[receiver_bank]["clients"]:
         banks[receiver_bank]["clients"][target_user_id] = create_empty_balance()
+    
+    for coin_key in currency_names.keys():
+        if coin_key not in banks[receiver_bank]["clients"][target_user_id]:
+            banks[receiver_bank]["clients"][target_user_id][coin_key] = 0
     
     banks[receiver_bank]["clients"][target_user_id][currency.value] += amount
     
@@ -2572,17 +2610,21 @@ async def transfer_command(
         if owner_id not in banks[sender_bank]["clients"]:
             banks[sender_bank]["clients"][owner_id] = create_empty_balance()
         
+        for coin_key in currency_names.keys():
+            if coin_key not in banks[sender_bank]["clients"][owner_id]:
+                banks[sender_bank]["clients"][owner_id][coin_key] = 0
+        
         banks[sender_bank]["clients"][owner_id][currency.value] += main_comission
         
         if fractional_currency and total_fractional_comission > 0:
-            if fractional_amount > 0:
-                if total_fractional_comission != fractional_amount:
-                    change = fractional_amount - total_fractional_comission
+            if total_fractional_comission != fractional_amount:
+                change = fractional_amount - total_fractional_comission
+                if change > 0:
                     if fractional_currency == "gold_coin":
                         sender_balance["silver_coin"] = sender_balance.get("silver_coin", 0) + change
                     elif fractional_currency == "silver_coin":
                         sender_balance["copper_coin"] = sender_balance.get("copper_coin", 0) + change
-                
+            else:
                 banks[sender_bank]["clients"][owner_id][fractional_currency] = banks[sender_bank]["clients"][owner_id].get(fractional_currency, 0) + total_fractional_comission
     
     save_banks(banks)
@@ -2590,19 +2632,18 @@ async def transfer_command(
     if comission_percent > 0:
         comission_msg = []
         if main_comission > 0:
-            comission_msg.append(f"{main_comission} {currency.name.lower()}")
-        if total_fractional_comission > 0:
-            fractional_name = next(c.name for c in transfer_command._params['currency'].choices if c.value == fractional_currency)
-            comission_msg.append(f"{total_fractional_comission} {fractional_name.lower()}")
+            comission_msg.append(f"{main_comission} {currency_names[currency.value]}")
+        if total_fractional_comission > 0 and fractional_currency:
+            comission_msg.append(f"{total_fractional_comission} {currency_names[fractional_currency]}")
         
         await interaction.followup.send(
-            f"✅ Успешно переведено {amount} {currency.name.lower()} пользователю {user.mention}!\n"
+            f"✅ Успешно переведено {amount} {currency_names[currency.value]} пользователю {user.mention}!\n"
             f"Комиссия: {' + '.join(comission_msg)}",
             ephemeral=True
         )
     else:
         await interaction.followup.send(
-            f"✅ Успешно переведено {amount} {currency.name.lower()} пользователю {user.mention} (без комиссии)!",
+            f"✅ Успешно переведено {amount} {currency_names[currency.value]} пользователю {user.mention} (без комиссии)!",
             ephemeral=True
         )
 
