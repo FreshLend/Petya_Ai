@@ -621,18 +621,45 @@ async def on_message(message: discord.Message):
 
         final_content = response_text.replace('<|REPLY|>', '')
         final_content = final_content.replace('<|USER_ID|>', message.author.mention)
-        final_content = ' '.join(final_content.split())
+
+        lines = final_content.split('\n')
+        non_empty_lines = [line for line in lines if line.strip() != '']
+        final_content = '\n'.join(non_empty_lines).strip()
 
         if not final_content:
             final_content = "(пустой ответ)"
 
         use_reply = '<|REPLY|>' in response_text
 
+        def split_long_message(text: str, limit: int = 2000) -> List[str]:
+            if len(text) <= limit:
+                return [text]
+            parts = []
+            while text:
+                if len(text) <= limit:
+                    parts.append(text)
+                    break
+                split_pos = text.rfind(' ', 0, limit)
+                if split_pos == -1:
+                    split_pos = limit
+                parts.append(text[:split_pos])
+                text = text[split_pos:].lstrip()
+            return parts
+
         try:
+            message_parts = split_long_message(final_content)
+            if not message_parts:
+                return
+
             if use_reply:
-                await message.reply(final_content)
+                first_msg = await message.reply(message_parts[0])
             else:
-                await message.channel.send(final_content)
+                first_msg = await message.channel.send(message_parts[0])
+
+            prev_msg = first_msg
+            for part in message_parts[1:]:
+                prev_msg = await prev_msg.reply(part, mention_author=False)
+
         except Exception as e:
             print(f"[ERROR] Ошибка при отправке: {e}")
 
