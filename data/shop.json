@@ -1,236 +1,17 @@
 {
     "categories": {
-        "🍹 Напитки": {
-            "description": "Замечательные напитки для хорошего отдыха!",
+        "🔮 Артефакты поиска": {
+            "description": "Магические приборы для обнаружения сокровищ и древностей.",
             "type": "regular",
             "items": {
-                "small_energy_drink": {
-                    "name": "Маленький энергетик",
-                    "description": "Восстанавливает 10 энергии",
-                    "type": "consumable",
-                    "price": {
-                        "copper_coin": 30
-                    },
-                    "quantity": 99,
-                    "effects": {
-                        "energy_restore": 10
-                    }
-                },
-                "energy_drink": {
-                    "name": "Энергетик",
-                    "description": "Восстанавливает 25 энергии",
-                    "type": "consumable",
-                    "price": {
-                        "copper_coin": 70
-                    },
-                    "quantity": 99,
-                    "effects": {
-                        "energy_restore": 25
-                    }
-                },
-                "large_energy_drink": {
-                    "name": "Большой энергетик",
-                    "description": "Восстанавливает 50 энергии",
-                    "type": "consumable",
-                    "price": {
-                        "silver_coin": 2,
-                        "copper_coin": 50
-                    },
-                    "quantity": 99,
-                    "effects": {
-                        "energy_restore": 50
-                    },
-                    "requirements": {
-                        "level": 5
-                    }
-                },
-                "premium_energy_drink": {
-                    "name": "Премиум энергетик",
-                    "description": "Восстанавливает 80 энергии",
-                    "type": "consumable",
-                    "price": {
-                        "silver_coin": 5
-                    },
-                    "quantity": 99,
-                    "effects": {
-                        "energy_restore": 80
-                    },
-                    "requirements": {
-                        "level": 8
-                    }
-                }
-            }
-        },
-        "📚 Тайная библиотека": {
-            "description": "Древние фолианты и запретные знания, дарующие силу!",
-            "type": "regular",
-            "items": {
-                "small_exp_boost": {
-                    "name": "«Основы алхимии»",
-                    "description": "Простейшие рецепты, ускоряющие обучение. (+10% к опыту на 1 час)",
-                    "type": "consumable",
-                    "price": {
-                        "copper_coin": 100
-                    },
-                    "quantity": 30,
-                    "effects": {
-                        "exp_multiplier": 1.1
-                    },
-                    "duration": 3600
-                },
-                "exp_boost": {
-                    "name": "«Трактат о магическом просветлении»",
-                    "description": "Глубокие знания, раскрывающие потенциал разума. (+20% к опыту на 2 часа)",
-                    "type": "consumable",
-                    "price": {
-                        "silver_coin": 2,
-                        "copper_coin": 50
-                    },
-                    "quantity": 30,
-                    "effects": {
-                        "exp_multiplier": 1.2
-                    },
-                    "duration": 7200
-                },
-                "money_boost": {
-                    "name": "«Искусство торговли»",
-                    "description": "Секреты купцов, увеличивающие прибыль. (+15% к заработку на 1 час)",
-                    "type": "consumable",
-                    "price": {
-                        "silver_coin": 3
-                    },
-                    "quantity": 30,
-                    "effects": {
-                        "money_multiplier": 1.15
-                    },
-                    "duration": 3600
-                }
-            }
-        },
-        "⚙️ Улучшения": {
-            "description": "Батарейки и компоненты.",
-            "type": "regular",
-            "items": {
-                "energy_extender_small": {
-                    "name": "Малый усилитель энергии",
-                    "description": "Увеличивает максимальную энергию на 4 (постоянно)",
-                    "type": "upgrade",
-                    "price": {
-                        "silver_coin": 15
-                    },
-                    "quantity": 5,
-                    "effects": {
-                        "max_energy": 4
-                    },
-                    "requirements": {
-                        "level": 6
-                    }
-                },
-                "energy_extender": {
-                    "name": "Усилитель энергии",
-                    "description": "Увеличивает максимальную энергию на 8 (постоянно)",
-                    "type": "upgrade",
-                    "price": {
-                        "gold_coin": 1,
-                        "silver_coin": 20
-                    },
-                    "quantity": 5,
-                    "effects": {
-                        "max_energy": 8
-                    },
-                    "requirements": {
-                        "level": 10
-                    }
-                },
-                "exp_amplifier": {
-                    "name": "Амплификатор опыта",
-                    "description": "Увеличивает получаемый опыт на 3% (постоянно)",
-                    "type": "upgrade",
-                    "price": {
-                        "gold_coin": 2
-                    },
-                    "quantity": 40,
-                    "effects": {
-                        "exp_multiplier": 1.03
-                    },
-                    "requirements": {
-                        "level": 6
-                    },
-                    "duration": 10000000000
-                }
-            }
-        },
-        "🎁 Наборы": {
-            "description": "Купите подарок себе или кому-то ещё!",
-            "type": "regular",
-            "items": {
-                "starter_pack": {
-                    "name": "Стартовый набор",
-                    "description": "Набор для новичков: 3 энергетика и малый усилитель опыта",
-                    "type": "bundle",
-                    "price": {
-                        "copper_coin": 200
-                    },
-                    "quantity": 30,
-                    "discount": 10,
-                    "contains": {
-                        "energy_drink": 3,
-                        "small_exp_boost": 1
-                    },
-                    "requirements": {
-                        "level": 2
-                    }
-                },
-                "worker_pack": {
-                    "name": "Рабочий набор",
-                    "description": "2 больших энергетика и усилитель дохода",
-                    "type": "bundle",
-                    "price": {
-                        "silver_coin": 5
-                    },
-                    "quantity": 20,
-                    "discount": 15,
-                    "contains": {
-                        "large_energy_drink": 2,
-                        "money_boost": 1
-                    },
-                    "requirements": {
-                        "level": 8
-                    }
-                },
-                "premium_pack": {
-                    "name": "Премиум набор",
-                    "description": "3 премиум энергетика, 2 усилителя опыта и усилитель дохода",
-                    "type": "bundle",
-                    "price": {
-                        "gold_coin": 2,
-                        "silver_coin": 50
-                    },
-                    "quantity": 15,
-                    "discount": 20,
-                    "contains": {
-                        "premium_energy_drink": 3,
-                        "exp_boost": 2,
-                        "money_boost": 1
-                    },
-                    "requirements": {
-                        "level": 12
-                    }
-                }
-            }
-        },
-        "🛠 Инструменты": {
-            "description": "Лучшие инструменты и техника только у нас!",
-            "type": "regular",
-            "items": {
-                "metal_detector_basic": {
-                    "name": "Базовый металлоискатель",
-                    "description": "Дешёвый и простой детектор для новичков.",
+                "divining_rod_basic": {
+                    "name": "Лозоходческая рамка",
+                    "description": "Простая рамка из ивового прута. Чувствует металл на расстоянии шага.",
                     "type": "tools",
                     "sub_type": "metal_detector",
                     "tool_level": 1,
                     "price": {
-                        "silver_coin": 15
+                        "silver_coin": 5
                     },
                     "quantity": "∞",
                     "max_durability": 50,
@@ -239,11 +20,14 @@
                     },
                     "sold": false,
                     "use": false,
-                    "delete": false
+                    "delete": false,
+                    "requirements": {
+                        "level": 1
+                    }
                 },
-                "metal_detector_advanced": {
-                    "name": "Улучшенный металлоискатель",
-                    "description": "Надёжный прибор для серьёзных поисков.",
+                "divining_rod_advanced": {
+                    "name": "Руна-детектор",
+                    "description": "Медный жезл с рунической гравировкой. Надёжный помощник искателя.",
                     "type": "tools",
                     "sub_type": "metal_detector",
                     "tool_level": 2,
@@ -257,11 +41,14 @@
                     },
                     "sold": false,
                     "use": false,
-                    "delete": false
+                    "delete": false,
+                    "requirements": {
+                        "level": 10
+                    }
                 },
-                "metal_detector_pro": {
-                    "name": "Профессиональный металлоискатель",
-                    "description": "Мощный детектор с глубоким поиском.",
+                "divining_rod_pro": {
+                    "name": "Кристалл-искатель",
+                    "description": "Хрустальный шар в оправе из серебра. Видит сквозь камень и землю.",
                     "type": "tools",
                     "sub_type": "metal_detector",
                     "tool_level": 3,
@@ -275,121 +62,20 @@
                     },
                     "sold": false,
                     "use": false,
-                    "delete": false
-                }
-            }
-        },
-        "💊 Усилители": {
-            "description": "Пахнет чем-то нелегальным...",
-            "type": "black_market",
-            "items": {
-                "illegal_exp_boost": {
-                    "name": "Нелегальный усилитель опыта",
-                    "description": "+40% к опыту на 1 час",
-                    "type": "consumable",
-                    "price": {
-                        "gold_coin": 5
-                    },
-                    "quantity": "∞",
-                    "effects": {
-                        "exp_multiplier": 1.4
-                    },
-                    "requirements": {
-                        "level": 16
-                    },
-                    "duration": 3600
-                },
-                "strong_money_boost": {
-                    "name": "Сильный усилитель дохода",
-                    "description": "+30% к заработку на 1 час",
-                    "type": "consumable",
-                    "price": {
-                        "gold_coin": 6
-                    },
-                    "quantity": "∞",
-                    "effects": {
-                        "money_multiplier": 1.3
-                    },
-                    "duration": 3600
-                },
-                "energy_overdrive": {
-                    "name": "Энергетический овердрайв",
-                    "description": "Восстанавливает всю энергию и +1 к максимуму",
-                    "type": "consumable",
-                    "price": {
-                        "gold_coin": 8
-                    },
-                    "quantity": "∞",
-                    "effects": {
-                        "energy_restore": 10000000000,
-                        "max_energy": 1
-                    },
-                    "requirements": {
-                        "level": 18
-                    }
-                }
-            }
-        },
-        "🔞 Эксклюзив": {
-            "description": "Скорее всего это опасно для здоровья!",
-            "type": "black_market",
-            "items": {
-                "energy_extender_large": {
-                    "name": "Большой усилитель энергии",
-                    "description": "Увеличивает максимальную энергию на 25 (постоянно)",
-                    "type": "upgrade",
-                    "price": {
-                        "gold_coin": 25
-                    },
-                    "quantity": 30,
-                    "effects": {
-                        "max_energy": 25
-                    },
+                    "delete": false,
                     "requirements": {
                         "level": 20
                     }
-                },
-                "exp_godmode": {
-                    "name": "Режим бога (опыт)",
-                    "description": "+80% к опыту на 30 минут",
-                    "type": "consumable",
-                    "price": {
-                        "gold_coin": 20
-                    },
-                    "quantity": "∞",
-                    "effects": {
-                        "exp_multiplier": 1.8
-                    },
-                    "requirements": {
-                        "level": 18
-                    },
-                    "duration": 1800
-                },
-                "money_godmode": {
-                    "name": "Режим бога (доход)",
-                    "description": "+80% к заработку на 30 минут",
-                    "type": "consumable",
-                    "price": {
-                        "gold_coin": 15
-                    },
-                    "quantity": "∞",
-                    "effects": {
-                        "money_multiplier": 1.8
-                    },
-                    "requirements": {
-                        "level": 18
-                    },
-                    "duration": 1800
                 }
             }
         },
-        "🔪 Инструменты": {
-            "description": "Нелегальные и модифицированные инструменты.",
+        "⚔️ Тайная лавка": {
+            "description": "Запрещённые артефакты, добытые в руинах павших королевств.",
             "type": "black_market",
             "items": {
-                "metal_detector_military": {
-                    "name": "Военный сканер",
-                    "description": "Высокотехнологичный прибор, используемый армией.",
+                "divining_rod_military": {
+                    "name": "Око дракона",
+                    "description": "Артефакт древних гномов, сканирует недра на сотню локтей.",
                     "type": "tools",
                     "sub_type": "metal_detector",
                     "tool_level": 4,
@@ -403,11 +89,14 @@
                     },
                     "sold": false,
                     "use": false,
-                    "delete": false
+                    "delete": false,
+                    "requirements": {
+                        "level": 30
+                    }
                 },
-                "metal_detector_legendary": {
-                    "name": "Детектор «Золотой Дракон»",
-                    "description": "Артефактный металлоискатель с магическим усилением.",
+                "divining_rod_legendary": {
+                    "name": "Зерцало Истины",
+                    "description": "Артефакт эпохи Первородных. Показывает все скрытые сокровища мира.",
                     "type": "tools",
                     "sub_type": "metal_detector",
                     "tool_level": 5,
@@ -421,7 +110,563 @@
                     },
                     "sold": false,
                     "use": false,
-                    "delete": false
+                    "delete": false,
+                    "requirements": {
+                        "level": 40
+                    }
+                }
+            }
+        },
+        "📜 Свитки мудрости": {
+            "description": "Древние знания, ускоряющие ваш путь к мастерству.",
+            "type": "regular",
+            "items": {
+                "scroll_tier1": {
+                    "name": "«Азы ремесла»",
+                    "description": "Свиток начинающего. Даёт +5% опыта на 30 мин.",
+                    "type": "consumable",
+                    "price": {
+                        "silver_coin": 2,
+                        "copper_coin": 50
+                    },
+                    "quantity": 30,
+                    "effects": {
+                        "exp_multiplier": 1.05
+                    },
+                    "duration": 1800,
+                    "requirements": {
+                        "level": 5
+                    }
+                },
+                "scroll_tier2": {
+                    "name": "«Тайны подмастерья»",
+                    "description": "+10% к опыту на 60 мин. Секреты старых мастеров.",
+                    "type": "consumable",
+                    "price": {
+                        "silver_coin": 15,
+                        "copper_coin": 50
+                    },
+                    "quantity": 30,
+                    "effects": {
+                        "exp_multiplier": 1.1
+                    },
+                    "duration": 3600,
+                    "requirements": {
+                        "level": 15
+                    }
+                },
+                "scroll_tier3": {
+                    "name": "«Гримуар мастера»",
+                    "description": "+15% опыта на 90 мин. Познание ремесла.",
+                    "type": "consumable",
+                    "price": {
+                        "silver_coin": 45,
+                        "copper_coin": 75
+                    },
+                    "quantity": 30,
+                    "effects": {
+                        "exp_multiplier": 1.15
+                    },
+                    "duration": 5400,
+                    "requirements": {
+                        "level": 25
+                    }
+                },
+                "scroll_tier4": {
+                    "name": "«Фолиант эксперта»",
+                    "description": "+20% опыта на 2 часа. Знания, накопленные веками.",
+                    "type": "consumable",
+                    "price": {
+                        "gold_coin": 2,
+                        "silver_coin": 50
+                    },
+                    "quantity": 30,
+                    "effects": {
+                        "exp_multiplier": 1.2
+                    },
+                    "duration": 7200,
+                    "requirements": {
+                        "level": 35
+                    }
+                },
+                "scroll_tier5": {
+                    "name": "«Кодекс легенды»",
+                    "description": "+25% опыта на 2.5 часа. Сокровенные знания богов.",
+                    "type": "consumable",
+                    "price": {
+                        "gold_coin": 10,
+                        "silver_coin": 75
+                    },
+                    "quantity": 30,
+                    "effects": {
+                        "exp_multiplier": 1.25
+                    },
+                    "duration": 9000,
+                    "requirements": {
+                        "level": 45
+                    }
+                }
+            }
+        },
+        "🍷 Зельеварня": {
+            "description": "Эликсиры для восстановления сил и бодрости духа.",
+            "type": "regular",
+            "items": {
+                "energy_tier1": {
+                    "name": "Малый тоник жизни",
+                    "description": "Восстанавливает 15 единиц энергии. Согревающий травяной отвар.",
+                    "type": "consumable",
+                    "price": {
+                        "silver_coin": 1,
+                        "copper_coin": 20
+                    },
+                    "quantity": 99,
+                    "effects": {
+                        "energy_restore": 15
+                    },
+                    "requirements": {
+                        "level": 1
+                    }
+                },
+                "energy_tier2": {
+                    "name": "Средний эликсир бодрости",
+                    "description": "Восстанавливает 30 энергии. Настой на горных травах.",
+                    "type": "consumable",
+                    "price": {
+                        "silver_coin": 6,
+                        "copper_coin": 80
+                    },
+                    "quantity": 99,
+                    "effects": {
+                        "energy_restore": 30
+                    },
+                    "requirements": {
+                        "level": 15
+                    }
+                },
+                "energy_tier3": {
+                    "name": "Большое зелье силы",
+                    "description": "Восстанавливает 45 энергии. Пульсирует магией.",
+                    "type": "consumable",
+                    "price": {
+                        "silver_coin": 20,
+                        "copper_coin": 50
+                    },
+                    "quantity": 99,
+                    "effects": {
+                        "energy_restore": 45
+                    },
+                    "requirements": {
+                        "level": 25
+                    }
+                },
+                "energy_tier4": {
+                    "name": "Титан-эликсир",
+                    "description": "Восстанавливает 60 энергии. Кровь горных великанов.",
+                    "type": "consumable",
+                    "price": {
+                        "gold_coin": 1,
+                        "silver_coin": 20
+                    },
+                    "quantity": 99,
+                    "effects": {
+                        "energy_restore": 60
+                    },
+                    "requirements": {
+                        "level": 35
+                    }
+                },
+                "energy_tier5": {
+                    "name": "Нектар богов",
+                    "description": "Восстанавливает 75 энергии. Питьё, дарующее бессмертным силу.",
+                    "type": "consumable",
+                    "price": {
+                        "gold_coin": 5,
+                        "silver_coin": 50
+                    },
+                    "quantity": 99,
+                    "effects": {
+                        "energy_restore": 75
+                    },
+                    "requirements": {
+                        "level": 45
+                    }
+                }
+            }
+        },
+        "🌀 Татуировки силы": {
+            "description": "Древние нательные знаки, увеличивающие ваш жизненный потенциал.",
+            "type": "regular",
+            "items": {
+                "upgrade_tier1": {
+                    "name": "Руна выносливости +2",
+                    "description": "Магическая татуировка: +2 к макс. энергии.",
+                    "type": "upgrade",
+                    "price": {
+                        "silver_coin": 10,
+                        "copper_coin": 75
+                    },
+                    "quantity": 5,
+                    "effects": {
+                        "max_energy": 2
+                    },
+                    "requirements": {
+                        "level": 5
+                    }
+                },
+                "upgrade_tier2": {
+                    "name": "Метка стойкости +4",
+                    "description": "Нательная метка: +4 к максимальной энергии.",
+                    "type": "upgrade",
+                    "price": {
+                        "silver_coin": 60,
+                        "copper_coin": 50
+                    },
+                    "quantity": 1,
+                    "effects": {
+                        "max_energy": 4
+                    },
+                    "requirements": {
+                        "level": 15
+                    }
+                },
+                "upgrade_tier3": {
+                    "name": "Печать жизненной силы +6",
+                    "description": "Нательная печать: +6 к максимуму энергии.",
+                    "type": "upgrade",
+                    "price": {
+                        "gold_coin": 2,
+                        "silver_coin": 20
+                    },
+                    "quantity": 5,
+                    "effects": {
+                        "max_energy": 6
+                    },
+                    "requirements": {
+                        "level": 25
+                    }
+                },
+                "upgrade_tier4": {
+                    "name": "Клеймо титана +8",
+                    "description": "Татуировка титанов: +8 к макс. энергии.",
+                    "type": "upgrade",
+                    "price": {
+                        "gold_coin": 12,
+                        "silver_coin": 50
+                    },
+                    "quantity": 3,
+                    "effects": {
+                        "max_energy": 8
+                    },
+                    "requirements": {
+                        "level": 35
+                    }
+                },
+                "upgrade_tier5": {
+                    "name": "Знак первородных +10",
+                    "description": "Древний знак богов: +10 к максимальной энергии.",
+                    "type": "upgrade",
+                    "price": {
+                        "gold_coin": 50,
+                        "silver_coin": 75
+                    },
+                    "quantity": 3,
+                    "effects": {
+                        "max_energy": 10
+                    },
+                    "requirements": {
+                        "level": 45
+                    }
+                }
+            }
+        },
+        "🎁 Наборы искателя": {
+            "description": "Экономьте монеты, покупая готовые комплекты снаряжения.",
+            "type": "regular",
+            "items": {
+                "bundle_tier1": {
+                    "name": "Набор следопыта",
+                    "description": "Комплект из 4 предметов со скидкой 15%! Для начинающих искателей.",
+                    "type": "bundle",
+                    "price": {
+                        "silver_coin": 12,
+                        "copper_coin": 50
+                    },
+                    "quantity": 16,
+                    "discount": 15,
+                    "contains": {
+                        "energy_tier1": 2,
+                        "scroll_tier1": 1,
+                        "upgrade_tier1": 1
+                    },
+                    "requirements": {
+                        "level": 5
+                    },
+                    "use": false
+                },
+                "bundle_tier2": {
+                    "name": "Набор кладоискателя",
+                    "description": "Комплект из 3 предметов со скидкой 20%! Отличное предложение.",
+                    "type": "bundle",
+                    "price": {
+                        "silver_coin": 70,
+                        "copper_coin": 25
+                    },
+                    "quantity": 16,
+                    "discount": 20,
+                    "contains": {
+                        "scroll_tier2": 2,
+                        "energy_tier2": 2,
+                        "upgrade_tier2": 1
+                    },
+                    "requirements": {
+                        "level": 15
+                    },
+                    "use": false
+                },
+                "bundle_tier3": {
+                    "name": "Набор археолога",
+                    "description": "Комплект из 3 предметов со скидкой 25%! Для серьёзных раскопок.",
+                    "type": "bundle",
+                    "price": {
+                        "gold_coin": 5,
+                        "silver_coin": 80
+                    },
+                    "quantity": 14,
+                    "discount": 25,
+                    "contains": {
+                        "upgrade_tier3": 2,
+                        "scroll_tier3": 2,
+                        "energy_tier3": 2
+                    },
+                    "requirements": {
+                        "level": 25
+                    },
+                    "use": false
+                },
+                "bundle_tier4": {
+                    "name": "Набор магистра",
+                    "description": "Комплект из 3 предметов со скидкой 30%! Элитное снаряжение.",
+                    "type": "bundle",
+                    "price": {
+                        "gold_coin": 25,
+                        "silver_coin": 60
+                    },
+                    "quantity": 12,
+                    "discount": 30,
+                    "contains": {
+                        "scroll_tier4": 2,
+                        "upgrade_tier4": 1,
+                        "energy_tier4": 3
+                    },
+                    "requirements": {
+                        "level": 35
+                    },
+                    "use": false
+                },
+                "bundle_tier5": {
+                    "name": "Набор легенды",
+                    "description": "Комплект из 3 предметов со скидкой 35%! Сокровища древних королей.",
+                    "type": "bundle",
+                    "price": {
+                        "gold_coin": 80,
+                        "silver_coin": 90
+                    },
+                    "quantity": 10,
+                    "discount": 35,
+                    "contains": {
+                        "scroll_tier5": 2,
+                        "upgrade_tier5": 1,
+                        "energy_tier5": 3
+                    },
+                    "requirements": {
+                        "level": 45
+                    },
+                    "use": false
+                }
+            }
+        },
+        "✨ Святилище запретных артефактов": {
+            "description": "Реликвии, за которыми охотятся тёмные ордена. Только по особым приглашениям.",
+            "type": "black_market",
+            "items": {
+                "exclusive_tier1": {
+                    "name": "Скрижаль титана",
+                    "description": "Дух титана вливается в вас: +5 к макс. энергии и полное восстановление.",
+                    "type": "consumable",
+                    "price": {
+                        "gold_coin": 1,
+                        "silver_coin": 50
+                    },
+                    "quantity": 5,
+                    "effects": {
+                        "energy_restore": 1000000,
+                        "max_energy": 5
+                    },
+                    "requirements": {
+                        "level": 20
+                    }
+                },
+                "exclusive_tier2": {
+                    "name": "Глаз мудрости",
+                    "description": "+100% к опыту на 30 мин. Прозрение древних драконов.",
+                    "type": "consumable",
+                    "price": {
+                        "gold_coin": 5,
+                        "silver_coin": 50
+                    },
+                    "quantity": 5,
+                    "effects": {
+                        "exp_multiplier": 2.0
+                    },
+                    "duration": 1800,
+                    "requirements": {
+                        "level": 30
+                    }
+                },
+                "exclusive_tier3": {
+                    "name": "Венец владыки",
+                    "description": "Режим богатства: доход +100% на 30 мин. Только для избранных.",
+                    "type": "consumable",
+                    "price": {
+                        "gold_coin": 5,
+                        "silver_coin": 50
+                    },
+                    "quantity": 3,
+                    "effects": {
+                        "money_multiplier": 2.0
+                    },
+                    "duration": 1800,
+                    "requirements": {
+                        "level": 30
+                    }
+                },
+                "exclusive_tier4": {
+                    "name": "Эликсир вечности",
+                    "description": "Восстанавливает 150 энергии. Божественный нектар.",
+                    "type": "consumable",
+                    "price": {
+                        "platinum_coin": 0,
+                        "gold_coin": 15,
+                        "silver_coin": 0
+                    },
+                    "quantity": 3,
+                    "effects": {
+                        "energy_restore": 150
+                    },
+                    "requirements": {
+                        "level": 40
+                    }
+                },
+                "exclusive_tier5": {
+                    "name": "Трактат бессмертных",
+                    "description": "+50% опыта на 2 часа. Знания, дарованные богами.",
+                    "type": "consumable",
+                    "price": {
+                        "platinum_coin": 0,
+                        "gold_coin": 30,
+                        "silver_coin": 0
+                    },
+                    "quantity": 2,
+                    "effects": {
+                        "exp_multiplier": 1.5
+                    },
+                    "duration": 7200,
+                    "requirements": {
+                        "level": 50
+                    }
+                }
+            }
+        },
+        "💀 Чёрный базар": {
+            "description": "Снадобья, за которые на костре жгут. Доступно только по особым приглашениям.",
+            "type": "black_market",
+            "items": {
+                "booster_exp_tier1": {
+                    "name": "Эликсир запретного знания",
+                    "description": "+25% к опыту на 60 мин. Шёпот древних книг.",
+                    "type": "consumable",
+                    "price": {
+                        "silver_coin": 40,
+                        "copper_coin": 50
+                    },
+                    "quantity": "∞",
+                    "effects": {
+                        "exp_multiplier": 1.25
+                    },
+                    "duration": 3600,
+                    "requirements": {
+                        "level": 20
+                    }
+                },
+                "booster_money_tier2": {
+                    "name": "Настой алхимика",
+                    "description": "+25% к заработку на 60 мин. Жадность — двигатель торговли.",
+                    "type": "consumable",
+                    "price": {
+                        "gold_coin": 0,
+                        "silver_coin": 80,
+                        "copper_coin": 0
+                    },
+                    "quantity": "∞",
+                    "effects": {
+                        "money_multiplier": 1.25
+                    },
+                    "duration": 3600,
+                    "requirements": {
+                        "level": 25
+                    }
+                },
+                "booster_exp_tier3": {
+                    "name": "Зелье тёмной мудрости",
+                    "description": "+35% к опыту на 60 мин. Рискованный, но эффективный коктейль.",
+                    "type": "consumable",
+                    "price": {
+                        "gold_coin": 2,
+                        "silver_coin": 50
+                    },
+                    "quantity": "∞",
+                    "effects": {
+                        "exp_multiplier": 1.35
+                    },
+                    "duration": 3600,
+                    "requirements": {
+                        "level": 35
+                    }
+                },
+                "booster_money_tier4": {
+                    "name": "Философский эликсир",
+                    "description": "+35% к заработку на 60 мин. Алхимическое превращение удачи в золото.",
+                    "type": "consumable",
+                    "price": {
+                        "gold_coin": 3,
+                        "silver_coin": 75
+                    },
+                    "quantity": "∞",
+                    "effects": {
+                        "money_multiplier": 1.35
+                    },
+                    "duration": 3600,
+                    "requirements": {
+                        "level": 40
+                    }
+                },
+                "booster_exp_tier5": {
+                    "name": "Демонический гримуар",
+                    "description": "Эксклюзивный эффект: опыт +45% на 60 мин. Цена — частица души.",
+                    "type": "consumable",
+                    "price": {
+                        "gold_coin": 40,
+                        "silver_coin": 0
+                    },
+                    "quantity": "∞",
+                    "effects": {
+                        "exp_multiplier": 1.45
+                    },
+                    "duration": 3600,
+                    "requirements": {
+                        "level": 50
+                    }
                 }
             }
         }

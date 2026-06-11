@@ -538,6 +538,14 @@ async def status_loop():
 @bot.event
 async def on_ready():
     print(f'Бот {bot.user} готов к работе!')
+    await bot.tree.sync()
+    try:
+        await bot.tree.sync()
+        cmds = await bot.tree.fetch_commands()
+        print(f"Синхронизировано команд: {len(cmds)}")
+    except Exception as e:
+        print(f"Ошибка синхронизации: {e}")
+        traceback.print_exc()
     if not os.path.exists(config.FEEDBACK_ACTIONS_FILE):
         with open(config.FEEDBACK_ACTIONS_FILE, 'w', encoding='utf-8') as f:
             json.dump({}, f)
@@ -560,50 +568,73 @@ async def on_ready():
         daily_avatar_check.start()
     
     plugin_api.call_hook('on_ready')
-    
-    await bot.tree.sync()
 
 @bot.event
 async def on_message(message: discord.Message):
     if message.author.bot or shutdown_flag or reboot_flag:
         return
-    
+
     plugin_api.call_hook('on_message', message)
-    
+
     guild_id = message.guild.id if message.guild else None
     allowed_channel_id = server_settings.get(guild_id, {}).get("allowed_channel")
-    
     if allowed_channel_id and message.channel.id != allowed_channel_id:
         return
-    
-    should_respond = False
+
     is_mentioned = bot.user.mentioned_in(message)
     
-    if is_mentioned or random.random() < config.RANDOM_RESPONCE_CHANCE:
+    is_reply_to_bot = (message.reference and message.reference.resolved 
+                       and isinstance(message.reference.resolved, discord.Message)
+                       and message.reference.resolved.author == bot.user)
+
+    should_respond = False
+    if is_mentioned or is_reply_to_bot:
         should_respond = True
-        
-        clean_content = message.content.replace(f'<@{bot.user.id}>', '').strip()
-        
-        if not clean_content or clean_content.startswith('!'):
-            return
-            
-        async with message.channel.typing():
-            response = await aibot.generate_response_async(
-                clean_content, 
-                message.author.id,
-                save_context=False,
-                ignore_context=True
-            )
-            
-            use_mention = is_mentioned and random.random() >= config.NO_MENTION_CHANCE
-            
-            if use_mention:
-                await message.reply(f"{message.author.mention} {response}")
+    elif random.random() < config.RANDOM_RESPONCE_CHANCE:
+        should_respond = True
+
+    if not should_respond:
+        return
+
+    clean_content = message.content.replace(f'<@{bot.user.id}>', '').strip()
+    if is_mentioned and not clean_content:
+        clean_content = ""
+
+    if clean_content.startswith('!'):
+        return
+
+    if is_mentioned or is_reply_to_bot:
+        save_context = True
+        ignore_context = False
+    else:
+        save_context = False
+        ignore_context = True
+
+    async with message.channel.typing():
+        response_text = await aibot.generate_response_async(
+            clean_content,
+            message.author.id,
+            save_context=save_context,
+            ignore_context=ignore_context,
+            was_mentioned=is_mentioned
+        )
+
+        final_content = response_text.replace('<|REPLY|>', '')
+        final_content = final_content.replace('<|USER_ID|>', message.author.mention)
+        final_content = ' '.join(final_content.split())
+
+        if not final_content:
+            final_content = "(пустой ответ)"
+
+        use_reply = '<|REPLY|>' in response_text
+
+        try:
+            if use_reply:
+                await message.reply(final_content)
             else:
-                if random.random() < config.REPLY_PREFERENCE:
-                    await message.reply(response)
-                else:
-                    await message.channel.send(response)
+                await message.channel.send(final_content)
+        except Exception as e:
+            print(f"[ERROR] Ошибка при отправке: {e}")
 
 @bot.event
 async def on_connect():
@@ -753,27 +784,24 @@ async def load_plugin_async(plugin: Plugin, level: int = 0, available_plugins: D
     traceback.print_exc()
     return False
 
-async def load_module_async(module_path, level: int = 0):
+async def load_module_async(module_name: str, file_path: str, level: int = 0):
     try:
-        if module_path in module_cache:
+        if file_path in module_cache:
             return True
 
-        dir_name, filename = os.path.split(module_path)
-        module_name = filename[:-3]
-        
         if hasattr(config, 'DISABLED_MODULES') and module_name in config.DISABLED_MODULES:
             print_tree_item(level, f"⏭️ Модуль {module_name} отключен в конфиге", "└")
             return False
             
-        content = await asyncio.to_thread(read_file_cached, module_path)
+        content = await asyncio.to_thread(read_file_cached, file_path)
 
         original_globals = globals().copy()
         try:
             exec(content, globals())
                 
-            module_cache[module_path] = True
+            module_cache[file_path] = True
             load_stats['success'] += 1
-            print_tree_item(level, f"✅ Модуль {module_path} успешно загружен", "└")
+            print_tree_item(level, f"✅ Модуль {module_name} ({os.path.basename(file_path)}) успешно загружен", "└")
             return True
         except Exception as e:
             globals().clear()
@@ -781,11 +809,11 @@ async def load_module_async(module_path, level: int = 0):
             raise
             
     except FileNotFoundError:
-        error_msg = f"⚠️ Файл {module_path} не найден"
+        error_msg = f"⚠️ Файл {file_path} не найден"
     except SyntaxError as e:
-        error_msg = f"❌ Синтаксическая ошибка в {module_path}: {str(e)}"
+        error_msg = f"❌ Синтаксическая ошибка в {file_path}: {str(e)}"
     except Exception as e:
-        error_msg = f"❌ Ошибка загрузки {module_path}: {str(e)}"
+        error_msg = f"❌ Ошибка загрузки {file_path}: {str(e)}"
     
     load_stats['fail'] += 1
     load_stats['errors'].append(error_msg)
@@ -837,10 +865,14 @@ async def load_all_plugins_and_modules():
     modules_dir = 'modules'
     
     if os.path.exists(modules_dir):
-        for filename in os.listdir(modules_dir):
-            if filename.endswith(".py") and filename != "__init__.py":
-                module_path = os.path.join(modules_dir, filename)
-                await load_module_async(module_path, 1)
+        for item in os.listdir(modules_dir):
+            module_folder = os.path.join(modules_dir, item)
+            if os.path.isdir(module_folder):
+                module_name = item
+                for filename in os.listdir(module_folder):
+                    if filename.endswith(".py") and filename != "__init__.py":
+                        module_path = os.path.join(module_folder, filename)
+                        await load_module_async(module_name, module_path, 1)
     
     print_tree_item(0, "📊 СТАТИСТИКА ЗАГРУЗКИ", "└")
     print_tree_item(1, f"✅ Успешно: {load_stats['success']}", "├")
