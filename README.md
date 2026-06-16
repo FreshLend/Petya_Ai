@@ -1,4 +1,4 @@
-# 🤖 Petya_Ai — Умный Discord бот с экономикой и самообучающимся ИИ
+# 🤖 Petya_Ai — Умный Discord бот с экономикой
 
 [![Join Discord](https://img.shields.io/badge/Join-Discord-5865F2)](https://discord.com/invite/95EyHeZmMz)
 ![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
