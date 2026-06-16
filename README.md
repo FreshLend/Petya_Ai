@@ -96,7 +96,7 @@ TOKEN = "ваш_токен_бота"
 ALLOWED_ID = [ВАШ_DISCORD_ID]  # для админ-команд
 ```
 
-5. (Опционально) Настройте модели в `data/models.json`:
+5. Настройте модели в `data/models.json`:
 ```json
 {
   "my_online_model": {
@@ -156,9 +156,9 @@ Petya_Ai/
 |---------|----------|
 | `/query ask <question>` | Задать вопрос ИИ |
 | `/query define <term>` | Определить термин |
-| `/parameter get/set/reset system_prompt/context/all` | Управление системным промптом |
-| `/model info/set <model>` | Информация / смена модели |
-| `/status history/queue` | История диалога или состояние очереди |
+| `/parameter <action> <parameter> [value]` | Управление параметрами |
+| `/model <action> [model]` | Информация о текущей модели / смена модели |
+| `/status <action> [limit]` | История диалога (history) или состояние очереди (queue) |
 | `/summarize <text>` | Краткое содержание текста |
 | `/translate <text> <to_lang> [from_lang]` | Перевод текста (NLLB) |
 
@@ -166,9 +166,9 @@ Petya_Ai/
 | Команда | Описание |
 |---------|----------|
 | `/8ball <question>` | Магический шар |
-| `/interact_hi [target]` | Поприветствовать пользователя/всех |
+| `/interact_hi [target]` | Поприветствовать |
 | `/interact_bye [target]` | Попрощаться |
-| `/interact_kiss <target> [cheeks]` | Поцеловать (в щёчку) |
+| `/interact_kiss <target> [cheeks]` | Поцеловать |
 | `/interact_bang <target>` | Выстрелить |
 | `/joke` | Случайная шутка |
 | `/quote` | Случайная цитата |
@@ -177,19 +177,19 @@ Petya_Ai/
 ### 💰 Экономика
 | Команда | Описание |
 |---------|----------|
-| `/profile [user] [create]` | Профиль / создание |
-| `/work [profession_list]` | Работать (или список профессий) |
-| `/set_group <user> <group>` | Установить группу (только создатель) |
-| `/exchange <from> <to> <amount>` | Конвертация валют (получение указанной суммы) |
+| `/profile [user] [create]` | Профиль |
+| `/work [profession_list]` | Работать |
+| `/set_group <user> <group>` | Установить группу |
+| `/exchange <from> <to> <amount>` | Конвертация валют |
 | `/transfer <amount> <currency> <user>` | Перевести деньги |
-| `/bank [action]` | Управление банком (create, list, rename, set_comission, set_service, info) |
+| `/bank [action]` | Управление банком |
 | `/deposit <amount> <currency>` | Внести на счёт |
 | `/withdraw <amount> <currency>` | Снять со счёта |
 | `/set_bank <name>` | Выбрать активный банк |
 | `/shop [black_store]` | Магазин / чёрный рынок |
 | `/inventory` | Инвентарь |
 | `/treasure` | Поиск сокровищ |
-| `/casino <action> [amount] [choice]` | Казино (меню, купить, продать, слоты, наперстки, блэкджек) |
+| `/casino <action> [amount] [choice]` | Казино (слоты, наперстки, блэкджек) |
 | `/leaderboard <type> [page]` | Топ игроков (уровень / богатство) |
 
 ### 🛠 Инструменты
@@ -206,13 +206,13 @@ Petya_Ai/
 | `/help <category>` | Справка по категориям (ai, fun, economy, tools) |
 | `/info [short_info]` | Информация о боте |
 | `/invite` | Ссылка-приглашение |
-| `/math <expression> [mode] [variable] [steps] [precision]` | Символьные вычисления (упрощение, производная, интеграл, предел, ряд, комплексные) |
+| `/math <expression> [mode] [variable] [steps] [precision]` | Символьные вычисления |
 | `/ping` | Задержка бота |
 | `/plugins <action> [plugin_id]` | Управление плагинами |
-| `/reboot` | Перезагрузить бота (только создатель) |
+| `/reboot` | Перезагрузить бота |
 | `/say [text]` | Отправить сообщение от имени бота |
 | `/servers` | Информация о серверах бота |
-| `/shutdown` | Выключить бота (только создатель) |
+| `/shutdown` | Выключить бота |
 
 ---
 
