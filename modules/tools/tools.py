@@ -2025,9 +2025,12 @@ async def info(interaction: discord.Interaction, short_info: bool = False):
         return
     if not short_info:
         guild_count = len(bot.guilds)
-        member_count = sum(guild.member_count for guild in bot.guilds)
-        bot_count = sum(len([m for m in guild.members if m.bot]) for guild in bot.guilds)
-        human_count = member_count - bot_count
+        unique_members = set()
+        for guild in bot.guilds:
+            for member in guild.members:
+                if not member.bot:
+                    unique_members.add(member.id)
+        human_count = len(unique_members)
         ping = round(bot.latency * 1000)
         embed = discord.Embed(title="💎 Статистика Бота", color=discord.Color.blue())
         embed.add_field(name="👑 — Разработчик:", value="<@1136934279348224042>", inline=False)

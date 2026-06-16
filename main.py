@@ -511,29 +511,25 @@ async def set_initial_avatar():
 
 @tasks.loop(seconds=900)
 async def status_loop():
-    while True:
-        guild_count = len(bot.guilds)
-        member_count = sum(guild.member_count for guild in bot.guilds)
-        bot_count = sum(len([m for m in guild.members if m.bot]) for guild in bot.guilds)
-        members_count = member_count - bot_count
-        
-        await bot.change_presence(activity=discord.Activity(
-            type=discord.ActivityType.watching,
-            name=f"{guild_count} серверов и {members_count} участников"
-        ))
-        await asyncio.sleep(300)
+    guild_count = len(bot.guilds)
+    unique_members = {m.id for g in bot.guilds for m in g.members if not m.bot}
+    members_count = len(unique_members)
 
-        await bot.change_presence(activity=discord.Activity(
-            type=discord.ActivityType.watching,
-            name="/invite"
-        ))
-        await asyncio.sleep(300)
-
-        await bot.change_presence(activity=discord.Activity(
-            type=discord.ActivityType.watching,
-            name="/help"
-        ))
-        await asyncio.sleep(300)
+    await bot.change_presence(activity=discord.Activity(
+        type=discord.ActivityType.watching,
+        name=f"{guild_count} серверов и {members_count} участников"
+    ))
+    await asyncio.sleep(300)
+    await bot.change_presence(activity=discord.Activity(
+        type=discord.ActivityType.watching,
+        name="/invite"
+    ))
+    await asyncio.sleep(300)
+    await bot.change_presence(activity=discord.Activity(
+        type=discord.ActivityType.watching,
+        name="/help"
+    ))
+    await asyncio.sleep(300)
 
 @bot.event
 async def on_ready():
