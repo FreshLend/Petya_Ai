@@ -4,7 +4,6 @@
 ![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Discord.py](https://img.shields.io/badge/discord.py-2.7%2B-blue)
 ![License](https://img.shields.io/badge/license-GPLv3-red)
-![Status](https://img.shields.io/badge/status-stable-green)
 
 **Petya_Ai** — многофункциональный Discord-бот с открытым исходным кодом.  
 Сочетает **гибкую систему плагинов**, **полноценную экономическую RPG**, **модуль искусственного интеллекта** (локальные LLM, OpenAi совместимый), **математический движок** (символьные вычисления, производные, интегралы, пределы), **переводчик NLLB** и множество утилит.
