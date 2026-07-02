@@ -1,6 +1,6 @@
 # Настойки Бота
-TOKEN = "" # Токен бота
-ALLOWED_ID = [1136934279348224042] # Доверенные ID
+TOKEN = "ваш_токен_бота" # Токен бота
+ALLOWED_ID = [ВАШ_DISCORD_ID] # Доверенные ID
 SHUTDOWN_TIME = 5  # Время на завершение работы в секундах
 REBOOT_DELAY = 5  # Задержка перед перезапуском в секундах
 SERVER_SETTINGS_FILE = "data/server/server_settings.json" # Настройки серверов
@@ -10,7 +10,7 @@ JOKES_AND_QUOTES = "data/jokes_and_quotes.json" # Шутки и цитаты
 INTERACTABLES = "data/interactables.json" # База гифок для Взаимодействий
 LANGUAGES = "data/languages.json" # Языки для перевода NLLB
 # Список отключаемых плагинов и модулей (без .py)
-DISABLED_PLUGINS = [""]
+DISABLED_PLUGINS = [""] # DISABLED_PLUGINS = ["ai_learning_algorithm"]
 DISABLED_MODULES = [""] # DISABLED_MODULES = ["entertainment"]
 
 # Настройка FeedBack

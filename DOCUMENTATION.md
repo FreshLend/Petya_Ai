@@ -81,15 +81,19 @@ async def ping_command(interaction: discord.Interaction):
 #### @plugin_hook
 Регистрирует обработчик событий Discord.
 
+**Важно:** Если хук возвращает `True`, это сигнализирует системе, что событие полностью обработано и дальнейшая обработка должна быть прервана. Это особенно полезно для хука `on_message` – плагин может заблокировать сообщение, и бот не будет на него отвечать.
+
 ```python
 @plugin_hook("on_ready")
 async def on_plugin_ready():
     print(f"Плагин {plugin_id} загружен!")
 
 @plugin_hook("on_message")
-async def on_plugin_message(message: discord.Message):
-    if "hello" in message.content.lower():
-        await message.channel.send("Hello from plugin!")
+async def on_plugin_message(message: discord.Message) -> bool:
+    if "спам" in message.content.lower():
+        await message.channel.send("⛔ Сообщение заблокировано!")
+        return True  # Прерываем обработку
+    return False  # Продолжаем обработку
 ```
 
 **Доступные хуки:**
@@ -256,6 +260,7 @@ print(f"Plugin {plugin_id} loading...")
 2. Фоновые задачи отменяются при выгрузке.
 3. Хуки удаляются при выгрузке.
 4. Доступ к файловой системе ограничен директорией плагина (функции `read_plugin_file`, `write_plugin_file` и др.).
+5. **Плагины могут возвращать `True` в хуках, чтобы прервать дальнейшую обработку события (например, в `on_message`).** Это позволяет полностью перехватывать сообщения.
 
 ---
 

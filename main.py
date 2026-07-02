@@ -289,18 +289,21 @@ class PluginAPI:
     def get_shared_data(self, key: str, default=None):
         return self.shared_data.get(key, {}).get('value', default)
     
-    def call_hook(self, hook_name: str, *args, **kwargs):
+    async def call_hook(self, hook_name: str, *args, **kwargs) -> bool:
         if hook_name not in self.plugin_hooks:
-            return
-        
+            return False
+
         for hook in self.plugin_hooks[hook_name]:
             try:
                 if asyncio.iscoroutinefunction(hook['callback']):
-                    asyncio.create_task(hook['callback'](*args, **kwargs))
+                    result = await hook['callback'](*args, **kwargs)
                 else:
-                    hook['callback'](*args, **kwargs)
+                    result = hook['callback'](*args, **kwargs)
+                if result is True:
+                    return True
             except Exception as e:
-                print(f"❌ Ошибка в хуке '{hook_name}' плагина '{hook['plugin_id']}': {e}")
+                print(f"❌ Ошибка в хуке '{hook_name}': {e}")
+        return False
     
     def emit_event(self, event_name: str, *args, **kwargs):
         self.call_hook('custom_events', event_name, *args, **kwargs)
@@ -534,7 +537,6 @@ async def status_loop():
 @bot.event
 async def on_ready():
     print(f'Бот {bot.user} готов к работе!')
-    await bot.tree.sync()
     try:
         await bot.tree.sync()
         cmds = await bot.tree.fetch_commands()
@@ -563,14 +565,15 @@ async def on_ready():
     if not daily_avatar_check.is_running():
         daily_avatar_check.start()
     
-    plugin_api.call_hook('on_ready')
+    await plugin_api.call_hook('on_ready')
 
 @bot.event
 async def on_message(message: discord.Message):
     if message.author.bot or shutdown_flag or reboot_flag:
         return
 
-    plugin_api.call_hook('on_message', message)
+    if await plugin_api.call_hook('on_message', message):
+        return
 
     guild_id = message.guild.id if message.guild else None
     allowed_channel_id = server_settings.get(guild_id, {}).get("allowed_channel")
@@ -673,23 +676,23 @@ async def on_resumed():
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    plugin_api.call_hook('on_voice_state_update', member, before, after)
+    await plugin_api.call_hook('on_voice_state_update', member, before, after)
 
 @bot.event
 async def on_member_join(member):
-    plugin_api.call_hook('on_member_join', member)
+    await plugin_api.call_hook('on_member_join', member)
 
 @bot.event
 async def on_member_remove(member):
-    plugin_api.call_hook('on_member_remove', member)
+    await plugin_api.call_hook('on_member_remove', member)
 
 @bot.event
 async def on_reaction_add(reaction, user):
-    plugin_api.call_hook('on_reaction_add', reaction, user)
+    await plugin_api.call_hook('on_reaction_add', reaction, user)
 
 @bot.event
 async def on_reaction_remove(reaction, user):
-    plugin_api.call_hook('on_reaction_remove', reaction, user)
+    await plugin_api.call_hook('on_reaction_remove', reaction, user)
 
 # ==================== СИСТЕМА ЗАГРУЗКИ ПЛАГИНОВ И МОДУЛЕЙ ====================
 

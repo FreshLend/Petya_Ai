@@ -1914,100 +1914,96 @@ async def feedback(interaction: discord.Interaction):
 ])
 async def help_command(interaction: discord.Interaction, category: app_commands.Choice[str]):
     await interaction.response.defer()
-    if category.value == "ai":
-        embed1 = discord.Embed(title="📚 Список команд: Искусственный Интеллект", color=0x2b2d31)
-        embed1.description = "**🤖 Искусственный Интеллект**"
-        embed1.add_field(
-            name="Доступные команды:",
-            value=(
-                "• `/query ask question:` - Задать вопрос ИИ\n"
-                "• `/query define term:` - Определить термин\n"
-                "• `/parameter action: (get, set, reset) parameter: (system_prompt) value:` - Управление системным промптом\n"
-                "• `/model action: (info, set) model:` - Управление моделью\n"
-                "• `/status action: (history, queue) limit:` - История диалога или состояние очереди\n"
-                "• `/summarize text:` - Суммаризировать текст\n"
-                "• `/translate text: to_language: from_language:` - Перевести текст"
-            ),
-            inline=False
-        )
-        embed2 = discord.Embed(color=0x2b2d31)
-        embed2.set_footer(text=f"Запрошено: {interaction.user.display_name}", icon_url=interaction.user.display_avatar.url)
-        await interaction.followup.send(embeds=[embed1, embed2])
-    elif category.value == "fun":
-        embed = discord.Embed(title="📚 Список команд: Развлечения", color=0x2b2d31)
-        embed.description = "**🎪 Развлечения**"
-        embed.add_field(
-            name="Доступные команды:",
-            value=(
-                "• `/8ball question:` - Магический шар\n"
-                "• `/interact_bang target:` - Выстрелить в пользователя\n"
-                "• `/interact_bye target:` - Отправить прощальное сообщение\n"
-                "• `/interact_hi target:` - Отправить приветственное сообщение\n"
-                "• `/interact_kiss target: cheeks:` - Поцеловать пользователя\n"
-                "• `/joke` - Случайная шутка\n"
-                "• `/quote` - Случайная цитата\n"
-                "• `/roll max_number:` - Случайное число"
-            ),
-            inline=False
-        )
-        embed.set_footer(text=f"Запрошено: {interaction.user.display_name}", icon_url=interaction.user.display_avatar.url)
-        await interaction.followup.send(embed=embed)
-    elif category.value == "economy":
-        embed1 = discord.Embed(title="📚 Список команд: Экономика", color=0x2b2d31)
-        embed1.description = "**💰 Экономика**"
-        embed1.add_field(
-            name="Доступные команды:",
-            value=(
-                "• `/bank action: (create, list, rename, set_comission, set_service, info) name: set_comission: set_service: new_name:` - Управление банком\n"
-                "• `/deposit amount: currency: (Медные монеты, Серебряные монеты, Золотые монеты, Платиновые монеты)` - Внести депозит\n"
-                "• `/exchange from_currency: (copper_coin, silver_coin, gold_coin, platinum_coin) to_currency: (copper_coin, silver_coin, gold_coin, platinum_coin) amount:` - Конвертация валют (получение указанного количества целевой валюты)\n"
-                "• `/inventory` - Инвентарь\n"
-                "• `/leaderboard top_type: (⭐ Уровень, 💰 Богатство) page: (страница)` - Топ игроков по уровню или богатству\n"
-                "• `/profile create: user:` - Профиль\n"
-                "• `/casino action: (меню, купить, продать, слоты, наперстки, блэкджек) amount: choice:` - Казино\n"
-                "• `/set_bank name:` - Установить банк\n"
-                "• `/set_group user: group: (разработчик, тестер, покупатель, пользователь)` - Установить группу пользователя\n"
-                "• `/shop black_store:` - Магазин (true/false)\n"
-                "• `/transfer amount: currency: (Медные монеты, Серебряные монеты, Золотые монеты, Платиновые монеты) user:` - Перевести деньги\n"
-                "• `/treasure` - Поиск сокровищ\n"
-                "• `/withdraw amount: currency: (Медные монеты, Серебряные монеты, Золотые монеты, Платиновые монеты)` - Снять деньги\n"
-                "• `/work profession_list:` - Работа (true/false)"
-            ),
-            inline=False
-        )
-        embed2 = discord.Embed(color=0x2b2d31)
-        embed2.set_footer(text=f"Запрошено: {interaction.user.display_name}", icon_url=interaction.user.display_avatar.url)
-        await interaction.followup.send(embeds=[embed1, embed2])
-    elif category.value == "tools":
-        embed1 = discord.Embed(title="📚 Список команд: Инструменты", color=0x2b2d31)
-        embed1.description = "**🛠️ Инструменты**"
-        embed1.add_field(
-            name="Доступные команды:",
-            value=(
-                "• `/avatar user:` - Аватар пользователя\n"
-                "• `/bot_channel action: (set_channel, reset_channel, show_channel) channel:` - Управление каналом бота\n"
-                "• `/connect disconnect:` - Подключиться к голосовому каналу\n"
-                "• `/calc expression: precision:` - Выполнить математические вычисления\n"
-                "• `/cipher action: (🔒 Зашифровать, 🔓 Расшифровать) cipher_type: (🔁 Цезарь, 🔁 Атбаш, 🔁 ROT13, 🔁 Виженер, 🔁 Base64, 🔁 Морзе, 🔁 HEX, 🔁 Бинарный, 🔁 XOR, 🔁 Аффинный, 🚫 MD5, 🚫 SHA-1, 🚫 SHA-256, 🚫 SHA-512) text: key: shift:` - Шифрование и расшифровка текста\n"
-                "• `/emoji action: (send, info) emoji: format:` - Работа с эмодзи\n"
-                "• `/emoji_list server_id:` - Список эмодзи сервера\n"
-                "• `/feedback` - Обратная связь\n"
-                "• `/info short_info:` - Информация о боте\n"
-                "• `/math expression: mode: variable: steps: precision:` - Вычислить математическое выражение\n"
-                "• `/invite` - Пригласить бота\n"
-                "• `/ping` - Проверка задержки\n"
-                "• `/plugins action: (list, info, reload, reload_all, files, load, unload) plugin_id:` - Управление плагинами\n"
-                "• `/reboot` - Перезагрузить бота\n"
-                "• `/say text:` - Сказать от имени бота\n"
-                "• `/servers` - Информация о серверах\n"
-                "• `/shutdown` - Выключить бота\n"
-                "• `/help category:` - Эта команда"
-            ),
-            inline=False
-        )
-        embed2 = discord.Embed(color=0x2b2d31)
-        embed2.set_footer(text=f"Запрошено: {interaction.user.display_name}", icon_url=interaction.user.display_avatar.url)
-        await interaction.followup.send(embeds=[embed1, embed2])
+
+    commands_by_category = {
+        "ai": [
+            "• `/query ask question:` - Задать вопрос ИИ",
+            "• `/query define term:` - Определить термин",
+            "• `/parameter action: (get, set, reset) parameter: (system_prompt) value:` - Управление системным промптом",
+            "• `/model action: (info, set) model:` - Управление моделью",
+            "• `/status action: (history, queue) limit:` - История диалога или состояние очереди",
+            "• `/summarize text:` - Суммаризировать текст",
+            "• `/translate text: to_language: from_language:` - Перевести текст"
+        ],
+        "fun": [
+            "• `/8ball question:` - Магический шар",
+            "• `/interact_bang target:` - Выстрелить в пользователя",
+            "• `/interact_bye target:` - Отправить прощальное сообщение",
+            "• `/interact_hi target:` - Отправить приветственное сообщение",
+            "• `/interact_kiss target: cheeks:` - Поцеловать пользователя",
+            "• `/joke` - Случайная шутка",
+            "• `/quote` - Случайная цитата",
+            "• `/roll max_number:` - Случайное число"
+        ],
+        "economy": [
+            "• `/bank action: (create, list, rename, set_comission, set_service, info) name: set_comission: set_service: new_name:` - Управление банком",
+            "• `/deposit amount: currency: (Медные монеты, Серебряные монеты, Золотые монеты, Платиновые монеты)` - Внести депозит",
+            "• `/exchange from_currency: (copper_coin, silver_coin, gold_coin, platinum_coin) to_currency: (copper_coin, silver_coin, gold_coin, platinum_coin) amount:` - Конвертация валют",
+            "• `/inventory` - Инвентарь",
+            "• `/leaderboard top_type: (⭐ Уровень, 💰 Богатство) page: (страница)` - Топ игроков",
+            "• `/profile create: user:` - Профиль",
+            "• `/casino action: (меню, купить, продать, слоты, наперстки, блэкджек) amount: choice:` - Казино",
+            "• `/set_bank name:` - Установить банк",
+            "• `/set_group user: group: (разработчик, тестер, покупатель, пользователь)` - Установить группу",
+            "• `/shop black_store:` - Магазин",
+            "• `/transfer amount: currency: (Медные, Серебряные, Золотые, Платиновые) user:` - Перевести деньги",
+            "• `/treasure` - Поиск сокровищ",
+            "• `/withdraw amount: currency: (Медные, Серебряные, Золотые, Платиновые)` - Снять деньги",
+            "• `/work profession_list:` - Работа"
+        ],
+        "tools": [
+            "• `/avatar user:` - Аватар пользователя",
+            "• `/bot_channel action: (set_channel, reset_channel, show_channel) channel:` - Управление каналом бота",
+            "• `/connect disconnect:` - Подключиться к голосовому каналу",
+            "• `/calc expression: precision:` - Математические вычисления",
+            "• `/cipher action: (🔒 Зашифровать, 🔓 Расшифровать) cipher_type: (Цезарь, Атбаш, ROT13, Виженер, Base64, Морзе, HEX, Бинарный, XOR, Аффинный, MD5, SHA-1, SHA-256, SHA-512) text: key: shift:` - Шифрование",
+            "• `/emoji action: (send, info) emoji: format:` - Работа с эмодзи",
+            "• `/emoji_list server_id:` - Список эмодзи сервера",
+            "• `/feedback` - Обратная связь",
+            "• `/info short_info:` - Информация о боте",
+            "• `/math expression: mode: variable: steps: precision:` - Вычислить выражение",
+            "• `/invite` - Пригласить бота",
+            "• `/ping` - Проверка задержки",
+            "• `/plugins action: (list, info, reload, reload_all, files, load, unload) plugin_id:` - Управление плагинами",
+            "• `/reboot` - Перезагрузить бота",
+            "• `/say text:` - Сказать от имени бота",
+            "• `/servers` - Информация о серверах",
+            "• `/shutdown` - Выключить бота",
+            "• `/help category:` - Эта команда"
+        ]
+    }
+
+    category_info = {
+        "ai": {"title": "📚 Список команд: Искусственный Интеллект", "desc": "**🤖 Искусственный Интеллект**"},
+        "fun": {"title": "📚 Список команд: Развлечения", "desc": "**🎪 Развлечения**"},
+        "economy": {"title": "📚 Список команд: Экономика", "desc": "**💰 Экономика**"},
+        "tools": {"title": "📚 Список команд: Инструменты", "desc": "**🛠️ Инструменты**"}
+    }
+
+    info = category_info[category.value]
+    commands = commands_by_category[category.value]
+
+    embed = discord.Embed(title=info["title"], color=0x2b2d31)
+    embed.description = info["desc"]
+
+    parts = []
+    current = ""
+    for cmd in commands:
+        if len(current) + len(cmd) + 1 <= 1024:
+            current += cmd + "\n"
+        else:
+            parts.append(current.strip())
+            current = cmd + "\n"
+    if current:
+        parts.append(current.strip())
+
+    if parts:
+        embed.add_field(name="Доступные команды:", value=parts[0], inline=False)
+        for part in parts[1:]:
+            embed.add_field(name="", value=part, inline=False)
+
+    embed.set_footer(text=f"Запрошено: {interaction.user.display_name}", icon_url=interaction.user.display_avatar.url)
+    await interaction.followup.send(embed=embed)
 
 @bot.tree.command(name="info", description="Информация о боте")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -2039,7 +2035,7 @@ async def info(interaction: discord.Interaction, short_info: bool = False):
         embed.add_field(name="🖥 Серверов:", value=str(guild_count), inline=False)
         embed.add_field(name="👥 Участников:", value=str(human_count), inline=False)
         embed.add_field(name="🔨 Дата создания:", value="<t:1691321400:F>", inline=False)
-        embed.add_field(name="🛠 Версия:", value="2.7.0", inline=False)
+        embed.add_field(name="🛠 Версия:", value="2.8.0", inline=False)
         embed.add_field(name="⏱ Задержка:", value=f"{ping}мс", inline=False)
         embed.add_field(name="🕒 Время работы:", value=f"<t:{unix_time}:F> - <t:{unix_time}:R>", inline=False)
         embed.add_field(name="🌐 — Наш сайт:", value="[Нажми сюда!](https://freshlend.github.io)", inline=False)
