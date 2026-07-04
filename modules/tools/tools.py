@@ -1712,22 +1712,6 @@ async def cipher(
     except Exception as e:
         await interaction.followup.send(f"❌ Произошла ошибка при обработке: {str(e)}", ephemeral=True)
 
-@bot.tree.command(name="connect", description="Подключить бота к голосовому каналу")
-async def connect(interaction: discord.Interaction, disconnect: bool = False):
-    await interaction.response.defer()
-    if disconnect:
-        if interaction.guild.voice_client:
-            await interaction.guild.voice_client.disconnect()
-            await interaction.followup.send("Отключился от голосового канала!")
-        else:
-            await interaction.followup.send("Бот не подключен к голосовому каналу!")
-    else:
-        if interaction.user.voice:
-            await interaction.user.voice.channel.connect()
-            await interaction.followup.send("Подключился к голосовому каналу!")
-        else:
-            await interaction.followup.send("Вы не находитесь в голосовом канале!")
-
 @bot.tree.command(name="emoji", description="Работа с кастомными эмодзи")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.user_install()
@@ -1954,7 +1938,6 @@ async def help_command(interaction: discord.Interaction, category: app_commands.
         "tools": [
             "• `/avatar user:` - Аватар пользователя",
             "• `/bot_channel action: (set_channel, reset_channel, show_channel) channel:` - Управление каналом бота",
-            "• `/connect disconnect:` - Подключиться к голосовому каналу",
             "• `/calc expression: precision:` - Математические вычисления",
             "• `/cipher action: (🔒 Зашифровать, 🔓 Расшифровать) cipher_type: (Цезарь, Атбаш, ROT13, Виженер, Base64, Морзе, HEX, Бинарный, XOR, Аффинный, MD5, SHA-1, SHA-256, SHA-512) text: key: shift:` - Шифрование",
             "• `/emoji action: (send, info) emoji: format:` - Работа с эмодзи",
