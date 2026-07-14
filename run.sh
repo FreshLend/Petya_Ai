@@ -58,14 +58,11 @@ install_bot() {
         return
     fi
     
-    echo "Installing main dependencies..."
+    echo "Installing main dependencies (required)..."
     pip install discord.py
     pip install tqdm
     pip install langdetect
     pip install pynacl
-    pip install transformers
-    pip install torch
-    pip install llama-cpp-python
     pip install emoji
     pip install openai
     pip install protobuf
@@ -73,6 +70,38 @@ install_bot() {
         echo "Error installing main dependencies"
         read -p "Press Enter to continue..."
         return
+    fi
+    
+    echo
+    echo "Optional libraries (for AI features): transformers, torch, llama-cpp-python"
+    echo "You can choose to install each separately."
+    echo
+    
+    read -p "Install transformers? (y/n): " install_transformers
+    if [[ $install_transformers =~ ^[Yy]$ ]]; then
+        echo "Installing transformers..."
+        pip install transformers
+        if [ $? -ne 0 ]; then
+            echo "Warning: transformers installation failed"
+        fi
+    fi
+    
+    read -p "Install torch? (y/n): " install_torch
+    if [[ $install_torch =~ ^[Yy]$ ]]; then
+        echo "Installing torch (this may take a while)..."
+        pip install torch
+        if [ $? -ne 0 ]; then
+            echo "Warning: torch installation failed"
+        fi
+    fi
+    
+    read -p "Install llama-cpp-python? (y/n): " install_llama
+    if [[ $install_llama =~ ^[Yy]$ ]]; then
+        echo "Installing llama-cpp-python..."
+        pip install llama-cpp-python
+        if [ $? -ne 0 ]; then
+            echo "Warning: llama-cpp-python installation failed"
+        fi
     fi
     
     sleep 3

@@ -1,0 +1,10 @@
+discord.py
+tqdm
+langdetect
+pynacl
+emoji
+openai
+protobuf
+transformers
+torch
+llama-cpp-python

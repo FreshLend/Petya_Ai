@@ -63,14 +63,11 @@ if %ERRORLEVEL% NEQ 0 (
     goto menu
 )
 
-echo Installing main dependencies...
+echo Installing main dependencies (required)...
 pip install discord.py
 pip install tqdm
 pip install langdetect
 pip install pynacl
-pip install transformers
-pip install torch
-pip install llama-cpp-python
 pip install emoji
 pip install openai
 pip install protobuf
@@ -79,6 +76,40 @@ if %ERRORLEVEL% NEQ 0 (
     pause
     goto menu
 )
+
+:: Optional libraries
+echo.
+echo Optional libraries (for AI features): transformers, torch, llama-cpp-python
+echo You can choose to install each separately.
+echo.
+
+set /p install_transformers="Install transformers? (y/n): "
+if /i "%install_transformers%"=="y" (
+    echo Installing transformers...
+    pip install transformers
+    if %ERRORLEVEL% NEQ 0 (
+        echo Warning: transformers installation failed
+    )
+)
+
+set /p install_torch="Install torch? (y/n): "
+if /i "%install_torch%"=="y" (
+    echo Installing torch (this may take a while)...
+    pip install torch
+    if %ERRORLEVEL% NEQ 0 (
+        echo Warning: torch installation failed
+    )
+)
+
+set /p install_llama="Install llama-cpp-python? (y/n): "
+if /i "%install_llama%"=="y" (
+    echo Installing llama-cpp-python...
+    pip install llama-cpp-python
+    if %ERRORLEVEL% NEQ 0 (
+        echo Warning: llama-cpp-python installation failed
+    )
+)
+
 timeout /t 3 >nul
 cls
 

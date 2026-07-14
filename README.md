@@ -87,7 +87,7 @@ venv\Scripts\activate     # Windows
 
 3. Установите зависимости:
 ```bash
-pip install discord.py tqdm langdetect pynacl transformers torch llama-cpp-python emoji openai protobuf numpy sympy packaging
+pip install -r requirements.txt
 ```
 
 4. Настройте `config.py`:
