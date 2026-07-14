@@ -5,16 +5,37 @@ import threading
 import time
 import traceback
 import discord
-import torch
 import config
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Literal
 from discord import app_commands
 from langdetect import detect
-from llama_cpp import Llama
+
+LLAMA_AVAILABLE = False
+TORCH_AVAILABLE = False
+TRANSFORMERS_AVAILABLE = False
+
+try:
+    from llama_cpp import Llama
+    LLAMA_AVAILABLE = True
+except ImportError:
+    Llama = None
+
+try:
+    import torch
+    TORCH_AVAILABLE = True
+except ImportError:
+    torch = None
+
+try:
+    from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+    TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    AutoModelForSeq2SeqLM = None
+    AutoTokenizer = None
+
 from openai import OpenAI
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 shutdown_flag = False
 reboot_flag = False
@@ -24,7 +45,10 @@ class NLLBTranslator:
     def __init__(self):
         with open(config.LANGUAGES, 'r', encoding='utf-8') as f:
             lang_data = json.load(f)
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        if TORCH_AVAILABLE:
+            self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        else:
+            self.device = "cpu"
         self.model = None
         self.tokenizer = None
         self.language_mapping = lang_data["language_mapping"]
@@ -37,23 +61,27 @@ class NLLBTranslator:
         return [(f"{self.language_names[code]} ({code})", code) for code in sorted(self.language_mapping.keys())]
 
     async def load_model(self):
+        if not (TORCH_AVAILABLE and TRANSFORMERS_AVAILABLE):
+            return
         if self.model is None:
             if self.thread is None or not self.thread.is_alive():
                 self.thread = threading.Thread(target=self._load_model_sync)
                 self.thread.start()
-                print("Запущена фоновая загрузка NLLB модели...")
 
     def _load_model_sync(self):
+        if not (TORCH_AVAILABLE and TRANSFORMERS_AVAILABLE):
+            return
         with self.lock:
             if self.model is None:
                 model_name = "facebook/nllb-200-distilled-1.3B"
                 self.tokenizer = AutoTokenizer.from_pretrained(model_name)
                 self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(self.device)
-                print("NLLB модель загружена")
 
     async def translate_text(self, text: str, to_lang: str, from_lang: str = None, user_locale: str = None) -> str:
         if not text.strip():
             return ""
+        if not (TORCH_AVAILABLE and TRANSFORMERS_AVAILABLE):
+            raise RuntimeError("Переводчик недоступен: не установлены PyTorch или Transformers.")
         await self.load_model()
         if self.thread and self.thread.is_alive():
             await asyncio.get_event_loop().run_in_executor(None, self.thread.join)
@@ -81,12 +109,12 @@ class NLLBTranslator:
             if self.tokenizer is not None:
                 del self.tokenizer
                 self.tokenizer = None
-            print("NLLB модель выгружена")
 
 class AiBot:
     def __init__(self):
         self.user_settings = self.load_user_settings()
         self.models_config = self.load_models_config()
+        self.characters = self.load_characters()
         self.llm_instances = {}
         self.model_locks = {model_name: threading.Lock() for model_name in self.models_config.keys()}
         self.default_model = next(iter(self.models_config.keys())) if self.models_config else None
@@ -103,6 +131,8 @@ class AiBot:
         if offline_models_exist and not os.path.exists("data/models"):
             os.makedirs("data/models")
             print(f"Папка 'models' создана. Пожалуйста, поместите туда модели типа .gguf")
+        if offline_models_exist and not LLAMA_AVAILABLE:
+            print("⚠️ Обнаружены локальные модели, но llama-cpp-python не установлена. Они будут недоступны.")
 
     def load_models_config(self):
         if not os.path.exists(config.MODELS_FILE):
@@ -129,10 +159,68 @@ class AiBot:
         with open(config.USER_SETTINGS_FILE, "w", encoding="utf-8") as f:
             json.dump(self.user_settings, f, ensure_ascii=False, indent=2)
 
+    def load_characters(self):
+        if not os.path.exists(config.CHARACTER_FILE):
+            default_char = {
+                "Assistant": {
+                    "name": "Assistant",
+                    "description": "Полезный и дружелюбный ассистент.",
+                    "system_prompt": "Ты полезный и дружелюбный ассистент."
+                }
+            }
+            os.makedirs(os.path.dirname(config.CHARACTER_FILE), exist_ok=True)
+            with open(config.CHARACTER_FILE, "w", encoding="utf-8") as f:
+                json.dump(default_char, f, ensure_ascii=False, indent=2)
+            return default_char
+        try:
+            with open(config.CHARACTER_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Ошибка загрузки персонажей: {e}")
+            return {}
+
+    def get_user_character(self, user_id: int) -> str:
+        user_id_str = str(user_id)
+        if user_id_str in self.user_settings:
+            char = self.user_settings[user_id_str].get("character")
+            if char and char in self.characters:
+                return char
+        if self.characters:
+            return next(iter(self.characters.keys()))
+        return "Assistant"
+
+    def set_user_character(self, user_id: int, character_name: str):
+        if character_name not in self.characters:
+            raise ValueError(f"Персонаж {character_name} не найден")
+        user_id_str = str(user_id)
+        if user_id_str not in self.user_settings:
+            self.user_settings[user_id_str] = {}
+        self.user_settings[user_id_str]["character"] = character_name
+        self.save_user_settings()
+
+    def get_system_prompt(self, user_id: int, was_mentioned: bool = False) -> str:
+        context = user_contexts.get(user_id, {})
+        custom_prompt = context.get("custom_system_prompt")
+        if custom_prompt:
+            system_content = custom_prompt
+        else:
+            character_name = self.get_user_character(user_id)
+            character = self.characters.get(character_name)
+            if character:
+                system_content = character.get("system_prompt", "Ты полезный ассистент.")
+            else:
+                system_content = "Ты полезный ассистент."
+            if was_mentioned:
+                system_content += "\n\nПользователь упомянул тебя. Обязательно используйте теги по своему усмотрению."
+            else:
+                system_content += "\n\nТы начал разговор сам. Можешь использовать теги, но не обязательно."
+        system_content += config.TAGS_INSTRUCTION
+        return system_content
+
     def get_user_model(self, user_id: int) -> str:
         user_id_str = str(user_id)
         if user_id_str in self.user_settings:
-            return self.user_settings[user_id_str]["model"]
+            return self.user_settings[user_id_str].get("model", self.default_model)
         return self.default_model
 
     def set_user_model(self, user_id: int, model_name: str):
@@ -154,6 +242,8 @@ class AiBot:
             model_config = self.models_config[model_name]
             if self.is_online_model(model_name):
                 return None
+            if not LLAMA_AVAILABLE:
+                raise RuntimeError(f"Невозможно загрузить локальную модель {model_name}: llama-cpp-python не установлена.")
             model_path = model_config["path"]
             if not os.path.exists(model_path):
                 raise FileNotFoundError(f"Модель {model_path} не найдена")
@@ -201,15 +291,27 @@ class AiBot:
         model_name = self.get_user_model(user_id)
         return self.models_config[model_name]
 
-    def count_tokens(self, messages: List[Dict[str, str]], user_id: int) -> int:
+    def _extract_text_from_content(self, content):
+        if isinstance(content, str):
+            return content
+        elif isinstance(content, list):
+            texts = []
+            for part in content:
+                if isinstance(part, dict) and part.get('type') == 'text':
+                    texts.append(part.get('text', ''))
+            return ' '.join(texts)
+        else:
+            return str(content)
+
+    def count_tokens(self, messages: List[Dict[str, Any]], user_id: int) -> int:
         model_name = self.get_user_model(user_id)
         if self.is_online_model(model_name):
-            return sum(len(msg['content'].split()) for msg in messages)
+            return sum(len(self._extract_text_from_content(msg['content']).split()) for msg in messages)
         else:
             llm = self.get_llm_for_user(user_id)
-            return sum(len(llm.tokenize(str.encode(msg['content']))) for msg in messages)
+            return sum(len(llm.tokenize(str.encode(self._extract_text_from_content(msg['content'])))) for msg in messages)
 
-    def trim_context(self, messages: List[Dict[str, str]], user_id: int) -> List[Dict[str, str]]:
+    def trim_context(self, messages: List[Dict[str, Any]], user_id: int) -> List[Dict[str, Any]]:
         model_config = self.get_model_config_for_user(user_id)
         while self.count_tokens(messages, user_id) > model_config["context_length"] and len(messages) > 1:
             messages.pop(1)
@@ -221,7 +323,24 @@ class AiBot:
             self.openai_clients[key] = OpenAI(base_url=base_url, api_key=token)
         return self.openai_clients[key]
 
-    def _generate_online_response(self, model_name: str, messages: List[Dict[str, str]]) -> str:
+    def _build_vision_messages(self, messages: List[Dict], image_attachments: List[discord.Attachment]) -> List[Dict]:
+        if not image_attachments:
+            return messages
+        new_messages = messages.copy()
+        for i in range(len(new_messages) - 1, -1, -1):
+            if new_messages[i]['role'] == 'user':
+                user_msg = new_messages[i]
+                content_parts = [{"type": "text", "text": user_msg['content']}]
+                for att in image_attachments:
+                    content_parts.append({
+                        "type": "image_url",
+                        "image_url": {"url": att.url}
+                    })
+                new_messages[i]['content'] = content_parts
+                break
+        return new_messages
+
+    def _generate_online_response(self, model_name: str, messages: List[Dict[str, Any]], image_attachments: List[discord.Attachment] = None) -> str:
         model_config = self.models_config[model_name]
         base_url = model_config.get("base_url")
         token = model_config.get("token")
@@ -229,6 +348,8 @@ class AiBot:
         if not base_url or not token:
             raise Exception(f"Для онлайн модели {model_name} не указаны base_url или token в конфигурации")
         client = self._get_openai_client(base_url, token)
+        if image_attachments and model_config.get("vision", False):
+            messages = self._build_vision_messages(messages, image_attachments)
         try:
             completion = client.chat.completions.create(
                 model=model_link,
@@ -242,6 +363,8 @@ class AiBot:
             raise
 
     def _generate_offline_response(self, model_name: str, messages: List[Dict[str, str]]) -> str:
+        if not LLAMA_AVAILABLE:
+            raise RuntimeError("Локальные модели недоступны: отсутствует llama-cpp-python.")
         model_config = self.models_config[model_name]
         llm = self.load_model(model_name)
         if llm is None:
@@ -257,7 +380,7 @@ class AiBot:
             print(f"Ошибка генерации для модели {model_name}: {e}")
             raise
 
-    async def generate_response_async(self, prompt: str, user_id: int, save_context: bool = True, ignore_context: bool = False, was_mentioned: bool = False) -> str:
+    async def generate_response_async(self, prompt: str, user_id: int, save_context: bool = True, ignore_context: bool = False, was_mentioned: bool = False, image_attachments: List[discord.Attachment] = None) -> str:
         if shutdown_flag or reboot_flag:
             return "Бот выключается/перезагружается, новые запросы не принимаются."
 
@@ -267,7 +390,7 @@ class AiBot:
                 result = await asyncio.get_event_loop().run_in_executor(
                     self.executor,
                     self._generate_response_sync,
-                    prompt, user_id, save_context, ignore_context, was_mentioned
+                    prompt, user_id, save_context, ignore_context, was_mentioned, image_attachments
                 )
                 return result
             except Exception as e:
@@ -279,7 +402,7 @@ class AiBot:
 
         future = asyncio.get_event_loop().create_future()
         async with self.queue_lock:
-            self.generation_queue.append((prompt, user_id, save_context, ignore_context, was_mentioned, future))
+            self.generation_queue.append((prompt, user_id, save_context, ignore_context, was_mentioned, image_attachments, future))
             if not self.active_generation:
                 self.active_generation = True
                 asyncio.create_task(self.process_queue())
@@ -292,10 +415,10 @@ class AiBot:
                     self.active_generation = False
                     await asyncio.get_event_loop().run_in_executor(self.executor, self.unload_unused_models)
                     return
-                prompt, user_id, save_context, ignore_context, was_mentioned, future = self.generation_queue.popleft()
+                prompt, user_id, save_context, ignore_context, was_mentioned, image_attachments, future = self.generation_queue.popleft()
             try:
                 result = await asyncio.get_event_loop().run_in_executor(
-                    self.executor, self._generate_response_sync, prompt, user_id, save_context, ignore_context, was_mentioned
+                    self.executor, self._generate_response_sync, prompt, user_id, save_context, ignore_context, was_mentioned, image_attachments
                 )
                 if not future.done():
                     future.set_result(result)
@@ -303,39 +426,24 @@ class AiBot:
                 if not future.done():
                     future.set_exception(e)
 
-    def _generate_response_sync(self, prompt: str, user_id: int, save_context: bool = True, ignore_context: bool = False, was_mentioned: bool = False) -> str:
+    def _generate_response_sync(self, prompt: str, user_id: int, save_context: bool = True, ignore_context: bool = False, was_mentioned: bool = False, image_attachments: List[discord.Attachment] = None) -> str:
         try:
             print(f"\nПолучен запрос от пользователя {user_id}: {prompt}")
 
-            custom_prompt = None
-            if not ignore_context:
-                context = self._get_user_context_sync(user_id)
-                custom_prompt = context.get("custom_system_prompt")
-
-            if custom_prompt:
-                system_content = custom_prompt
-            else:
-                system_content = config.DEFAULT_SYSTEM_PROMPT
-                if was_mentioned:
-                    system_content += "\n\nПользователь упомянул тебя. Обязательно используйте теги по своему усмотрению."
-                else:
-                    system_content += "\n\nТы начал разговор сам. Можешь использовать теги, но не обязательно."
-
-            if not ignore_context:
-                system_content += config.TAGS_INSTRUCTION
-
             if ignore_context:
+                system_content = self.get_system_prompt(user_id, was_mentioned)
                 full_context = [{"role": "system", "content": system_content}, {"role": "user", "content": prompt}]
             else:
                 if save_context:
                     self._add_to_user_context_sync(user_id, "user", prompt)
                 context = self._get_user_context_sync(user_id)
+                system_content = self.get_system_prompt(user_id, was_mentioned)
                 full_context = [{"role": "system", "content": system_content}] + context["messages"]
 
             model_name = self.get_user_model(user_id)
             print(f"Генерация ответа (модель: {model_name})...")
             if self.is_online_model(model_name):
-                answer = self._generate_online_response(model_name, full_context)
+                answer = self._generate_online_response(model_name, full_context, image_attachments)
             else:
                 answer = self._generate_offline_response(model_name, full_context)
 
@@ -456,11 +564,11 @@ class AskModal(discord.ui.Modal, title="Задать вопрос боту"):
     question_input = discord.ui.TextInput(label="Ваш вопрос", style=discord.TextStyle.long, placeholder="Введите ваш вопрос здесь...", required=True, max_length=2000)
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        await process_question(interaction, self.question_input.value)
+        await process_question(interaction, self.question_input.value, is_private=True)
 
-async def process_question(interaction: discord.Interaction, question: str):
+async def process_question(interaction: discord.Interaction, question: str, image_attachments: List[discord.Attachment] = None, is_private: bool = True):
     user_model = aibot.get_user_model(interaction.user.id)
-    response_text = await aibot.generate_response_async(question, interaction.user.id, save_context=True, ignore_context=False)
+    response_text = await aibot.generate_response_async(question, interaction.user.id, save_context=True, ignore_context=False, image_attachments=image_attachments)
     class ClearView(discord.ui.View):
         def __init__(self):
             super().__init__(timeout=60)
@@ -546,9 +654,9 @@ async def process_question(interaction: discord.Interaction, question: str):
     max_content_length = 1990 - len(footer)
     response_parts = split_message(response_text, max_content_length)
     if len(response_parts) == 1:
-        await interaction.followup.send(f"{interaction.user.mention} {response_text}{footer}", view=ClearView())
+        await interaction.followup.send(f"{interaction.user.mention} {response_text}{footer}", view=ClearView(), ephemeral=is_private)
     else:
-        await interaction.followup.send(f"{interaction.user.mention} {response_parts[0]}", view=ClearView())
+        await interaction.followup.send(f"{interaction.user.mention} {response_parts[0]}", view=ClearView(), ephemeral=is_private)
         last_message = await interaction.original_response()
         for i, part in enumerate(response_parts[1:], 1):
             if i == len(response_parts) - 1:
@@ -558,30 +666,31 @@ async def process_question(interaction: discord.Interaction, question: str):
             if len(content) > 2000:
                 sub_parts = split_message(content, 1990)
                 for sub_part in sub_parts:
-                    last_message = await last_message.reply(content=sub_part, mention_author=False)
+                    last_message = await last_message.reply(content=sub_part, mention_author=False, ephemeral=is_private)
             else:
-                last_message = await last_message.reply(content=content, mention_author=False)
+                last_message = await last_message.reply(content=content, mention_author=False, ephemeral=is_private)
 
 @bot.tree.command(name="query", description="Задать вопрос или получить определение")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @app_commands.user_install()
-@app_commands.describe(action="Действие: ask или define", question="Ваш вопрос (для ask)", term="Термин для определения (для define)")
-async def query_command(interaction: discord.Interaction, action: Literal["ask", "define"], question: str = None, term: str = None):
+@app_commands.describe(action="Действие: ask или define", question="Ваш вопрос (для ask)", term="Термин для определения (для define)", image="Прикрепите изображение (опционально)", is_private="Сделать ответ видимым только вам (по умолчанию True)")
+async def query_command(interaction: discord.Interaction, action: Literal["ask", "define"], question: str = None, term: str = None, image: discord.Attachment = None, is_private: bool = True):
     if action == "ask":
         if question is None:
             await interaction.response.send_modal(AskModal())
         else:
-            await interaction.response.defer()
-            await process_question(interaction, question)
+            await interaction.response.defer(ephemeral=is_private)
+            image_list = [image] if image else []
+            await process_question(interaction, question, image_attachments=image_list, is_private=is_private)
     elif action == "define":
         if term is None:
             await interaction.response.send_message("❌ Для /query define необходимо указать term.", ephemeral=True)
             return
-        await interaction.response.defer()
+        await interaction.response.defer(ephemeral=is_private)
         prompt = f"Дай точное и краткое определение термина '{term}'. Если это аббревиатура, расшифруй её."
         definition = await aibot.generate_response_async(prompt, interaction.user.id, save_context=False, ignore_context=True)
         embed = discord.Embed(title=f"Определение: {term}", description=definition, color=discord.Color.dark_gold())
-        await interaction.followup.send(embed=embed)
+        await interaction.followup.send(embed=embed, ephemeral=is_private)
 
 @bot.tree.command(name="parameter", description="Управление параметрами (get/set/reset)")
 @app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
@@ -728,6 +837,10 @@ async def model_command(interaction: discord.Interaction, action: Literal["info"
                     await interaction.followup.send(f"❌ Модель {model} доступна только для групп: {', '.join(model_config['required_groups'])}!", ephemeral=True)
                     return
             
+            if model_config.get("type") == "offline" and not LLAMA_AVAILABLE:
+                await interaction.followup.send(f"❌ Локальная модель {model} недоступна: llama-cpp-python не установлена.", ephemeral=True)
+                return
+            
             aibot.set_user_model(interaction.user.id, model)
             await asyncio.get_event_loop().run_in_executor(aibot.executor, aibot.unload_unused_models)
             await interaction.followup.send(
@@ -866,3 +979,34 @@ async def language_autocomplete(interaction: discord.Interaction, current: str) 
         if current.lower() in name.lower() or current.lower() in code.lower():
             choices.append(app_commands.Choice(name=f"{name} ({code})", value=code))
     return choices[:25]
+
+@bot.tree.command(name="char", description="Управление персонажами (список или выбор)")
+@app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@app_commands.user_install()
+@app_commands.describe(character="Имя персонажа для выбора (оставьте пустым для списка)")
+async def char_command(interaction: discord.Interaction, character: str = None):
+    if character is None:
+        characters = aibot.characters
+        if not characters:
+            await interaction.response.send_message("❌ Персонажи не загружены.", ephemeral=True)
+            return
+        embed = discord.Embed(title="📜 Список персонажей", color=discord.Color.purple())
+        for name, data in characters.items():
+            desc = data.get("description", "Описание отсутствует.")
+            embed.add_field(name=name, value=desc, inline=False)
+        current_char = aibot.get_user_character(interaction.user.id)
+        embed.set_footer(text=f"Ваш текущий персонаж: {current_char}")
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+    else:
+        try:
+            if character not in aibot.characters:
+                available = ", ".join(aibot.characters.keys())
+                await interaction.response.send_message(f"❌ Персонаж '{character}' не найден. Доступные: {available}", ephemeral=True)
+                return
+            aibot.set_user_character(interaction.user.id, character)
+            if interaction.user.id in user_contexts:
+                user_contexts[interaction.user.id]["messages"] = []
+                save_contexts_sync()
+            await interaction.response.send_message(f"✅ Персонаж изменён на **{character}**! История диалога очищена.", ephemeral=True)
+        except Exception as e:
+            await interaction.response.send_message(f"❌ Ошибка: {str(e)}", ephemeral=True)

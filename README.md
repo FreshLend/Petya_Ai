@@ -4,6 +4,7 @@
 ![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Discord.py](https://img.shields.io/badge/discord.py-2.7%2B-blue)
 ![License](https://img.shields.io/badge/license-GPLv3-red)
+![Status](https://img.shields.io/badge/status-stable-green)
 
 **Petya_Ai** — многофункциональный Discord-бот с открытым исходным кодом.  
 Сочетает **гибкую систему плагинов**, **полноценную экономическую RPG**, **модуль искусственного интеллекта** (локальные LLM, OpenAi совместимый), **математический движок** (символьные вычисления, производные, интегралы, пределы), **переводчик NLLB** и множество утилит.
@@ -103,6 +104,7 @@ ALLOWED_ID = [ВАШ_DISCORD_ID]  # для админ-команд
     "base_url": "https://example.com/api/v1/",
     "token": "sk-or-v1",
     "link": "model/link",
+    "vision": true,
     "default_temperature": 0.7,
     "context_length": 16384,
     "max_tokens": 8192
@@ -169,12 +171,12 @@ Petya_Ai/
 | Команда | Описание |
 |---------|----------|
 | `/query ask <question>` | Задать вопрос ИИ |
-| `/query define <term>` | Определить термин |
 | `/parameter <action> <parameter> [value]` | Управление параметрами |
 | `/model <action> [model]` | Информация о текущей модели / смена модели |
 | `/status <action> [limit]` | История диалога (history) или состояние очереди (queue) |
 | `/summarize <text>` | Краткое содержание текста |
 | `/translate <text> <to_lang> [from_lang]` | Перевод текста (NLLB) |
+| `/char <character>` | Сменить персонажа |
 
 ### 🎪 Развлечения
 | Команда | Описание |
@@ -213,7 +215,6 @@ Petya_Ai/
 | `/bot_channel <action> [channel]` | Ограничить канал работы бота |
 | `/calc <expression> [precision]` | Калькулятор |
 | `/cipher <action> <cipher_type> <text> [key] [shift]` | Шифрование / дешифрование |
-| `/connect [disconnect]` | Подключиться к голосовому каналу |
 | `/emoji <action> <emoji> [format]` | Работа с эмодзи (send, info) |
 | `/emoji_list [server_id]` | Список эмодзи сервера |
 | `/feedback` | Отправить отзыв / проблему / идею |

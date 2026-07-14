@@ -4,6 +4,7 @@
     "base_url": "https://openrouter.ai/api/v1",
     "token": "OPENROUTER_API_KEY",
     "link": "openrouter/free",
+    "vision": true,
     "default_temperature": 0.7,
     "context_length": 200000,
     "max_tokens": 8192

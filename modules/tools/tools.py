@@ -1901,13 +1901,13 @@ async def help_command(interaction: discord.Interaction, category: app_commands.
 
     commands_by_category = {
         "ai": [
-            "• `/query ask question:` - Задать вопрос ИИ",
-            "• `/query define term:` - Определить термин",
+            "• `/query (ask, define) (question, term, image, is_private)` - Задать вопрос ИИ",
             "• `/parameter action: (get, set, reset) parameter: (system_prompt) value:` - Управление системным промптом",
             "• `/model action: (info, set) model:` - Управление моделью",
             "• `/status action: (history, queue) limit:` - История диалога или состояние очереди",
             "• `/summarize text:` - Суммаризировать текст",
             "• `/translate text: to_language: from_language:` - Перевести текст"
+            "• `/char character:` - Сменить персонажа"
         ],
         "fun": [
             "• `/8ball question:` - Магический шар",
