@@ -1,8 +1,0 @@
-{
-    "id": "spam_filter",
-    "name": "Spam Filter",
-    "description": "Клиент для сервера классификации спама (OpenAi Совместимый)",
-    "author": "FreshGame",
-    "version": "1.0.0",
-    "dependencies": []
-}
