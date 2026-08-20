@@ -4,7 +4,6 @@
 ![Python Version](https://img.shields.io/badge/python-3.10%2B-blue)
 ![Discord.py](https://img.shields.io/badge/discord.py-2.7%2B-blue)
 ![License](https://img.shields.io/badge/license-GPLv3-red)
-![Status](https://img.shields.io/badge/status-stable-green)
 
 **Petya_Ai** — многофункциональный Discord-бот с открытым исходным кодом.  
 Сочетает **гибкую систему плагинов**, **полноценную экономическую RPG**, **модуль искусственного интеллекта** (локальные LLM, OpenAi совместимый), **математический движок** (символьные вычисления, производные, интегралы, пределы), **переводчик NLLB** и множество утилит.
@@ -125,21 +124,6 @@ ALLOWED_ID = [ВАШ_DISCORD_ID]  # для админ-команд
 python main.py
 ```
 
-## 🔧 Дополнительно
-
-## 🔌 Плагин спам-фильтра
-
-Плагин `spam_filter` использует внешний сервер классификации, который должен быть запущен отдельно.  
-Сервер доступен по адресу: `http://localhost:8000` и предоставляет OpenAI-совместимый API для определения спама.  
-
-**Установка сервера:**  
-```bash
-git clone https://github.com/FreshLend/spam_classifier
-cd spam_classifier
-pip install -r requirements.txt
-python server.py
-```
-
 ---
 
 ## 🧩 Структура проекта
@@ -149,10 +133,10 @@ Petya_Ai/
 ├── main.py                 # Главный файл (система плагинов, события, загрузка)
 ├── config.py               # Конфигурация (токен, пути, настройки)
 ├── modules/                # Загружаемые модули (ai, economy, tools, entertainment)
-│   ├── ai/ai.py                        # ИИ, перевод
-│   ├── economy/economy.py              # Экономика, банки, магазин
-│   ├── tools/tools.py                  # Инструменты, шифрование, математика
-│   └── entertainment/entertainment.py  # Взаимодействия, шутки, цитаты
+│   ├── ai/                     # ИИ, перевод
+│   ├── economy/                # Экономика, банки, магазин
+│   ├── tools/                  # Инструменты, шифрование, математика
+│   └── entertainment/          # Взаимодействия, шутки, цитаты
 ├── plugins/                # Плагины (расширения)
 ├── data/                   # Данные (профили, магазин, контексты)
 │   ├── avatars/                # Аватары по сезонам
@@ -170,10 +154,11 @@ Petya_Ai/
 ### 🤖 Искусственный Интеллект
 | Команда | Описание |
 |---------|----------|
-| `/query ask <question>` | Задать вопрос ИИ |
-| `/parameter <action> <parameter> [value]` | Управление параметрами |
-| `/model <action> [model]` | Информация о текущей модели / смена модели |
-| `/status <action> [limit]` | История диалога (history) или состояние очереди (queue) |
+| `/query ask <question> [image] [is_private]` | Задать вопрос ИИ (можно с картинкой) |
+| `/query define <term> [is_private]` | Получить определение термина |
+| `/parameter <action> <parameter> [value]` | Управление параметрами: `action` = get/set/reset; `parameter` = system_prompt, context, all |
+| `/model <action> [model]` | Информация о модели (`info`) или смена модели (`set`) |
+| `/status <action> [limit]` | История диалога (`history`) или состояние очереди (`queue`) |
 | `/summarize <text>` | Краткое содержание текста |
 | `/translate <text> <to_lang> [from_lang]` | Перевод текста (NLLB) |
 | `/char <character>` | Сменить персонажа |
@@ -182,50 +167,51 @@ Petya_Ai/
 | Команда | Описание |
 |---------|----------|
 | `/8ball <question>` | Магический шар |
-| `/interact_hi [target]` | Поприветствовать |
-| `/interact_bye [target]` | Попрощаться |
-| `/interact_kiss <target> [cheeks]` | Поцеловать |
-| `/interact_bang <target>` | Выстрелить |
+| `/interact_hi [target]` | Поприветствовать (если target не указан – всех) |
+| `/interact_bye [target]` | Попрощаться (если target не указан – всех) |
+| `/interact_kiss <target> [cheeks]` | Поцеловать (с опцией в щёчку) |
+| `/interact_bang <target>` | Выстрелить в пользователя |
 | `/joke` | Случайная шутка |
 | `/quote` | Случайная цитата |
-| `/roll [max_number]` | Случайное число |
+| `/roll [max_number]` | Случайное число (по умолчанию 100) |
 
 ### 💰 Экономика
 | Команда | Описание |
 |---------|----------|
-| `/profile [user] [create]` | Профиль |
-| `/work [profession_list]` | Работать |
-| `/set_group <user> <group>` | Установить группу |
-| `/exchange <from> <to> <amount>` | Конвертация валют |
-| `/transfer <amount> <currency> <user>` | Перевести деньги |
-| `/bank [action]` | Управление банком |
+| `/profile [user] [create]` | Просмотр/создание профиля |
+| `/work [profession_list]` | Работать (с опцией показа списка профессий) |
+| `/set_group <user> <group>` | Установить группу (разработчик, тестер, покупатель, пользователь) |
+| `/exchange <from> <to> <amount>` | Конвертация валют (курс 100:1) |
+| `/transfer <amount> <currency> <user>` | Перевести деньги (медные, серебряные, золотые, платиновые) |
+| `/bank [action]` | Управление банком (create, list, rename, set_comission, set_service, info) |
 | `/deposit <amount> <currency>` | Внести на счёт |
 | `/withdraw <amount> <currency>` | Снять со счёта |
 | `/set_bank <name>` | Выбрать активный банк |
-| `/shop [black_store]` | Магазин / чёрный рынок |
+| `/shop [black_store]` | Магазин / чёрный рынок (если есть пропуск) |
 | `/inventory` | Инвентарь |
-| `/treasure` | Поиск сокровищ |
-| `/casino <action> [amount] [choice]` | Казино (слоты, наперстки, блэкджек) |
+| `/treasure` | Поиск сокровищ в локациях |
+| `/casino <action> [amount] [choice]` | Казино (меню, купить, продать, слоты, наперстки, блэкджек) |
 | `/leaderboard <type> [page]` | Топ игроков (уровень / богатство) |
 
 ### 🛠 Инструменты
 | Команда | Описание |
 |---------|----------|
 | `/avatar [user]` | Аватар пользователя |
-| `/bot_channel <action> [channel]` | Ограничить канал работы бота |
-| `/calc <expression> [precision]` | Калькулятор |
-| `/cipher <action> <cipher_type> <text> [key] [shift]` | Шифрование / дешифрование |
+| `/bot_channel <action> [channel]` | Ограничить канал работы бота (set_channel, reset_channel, show_channel) |
+| `/calc <expression> [precision]` | Калькулятор (обычные вычисления) |
+| `/cipher <action> <cipher_type> <text> [key] [shift]` | Шифрование/дешифрование (Цезарь, Атбаш, ROT13, Виженер, Base64, Морзе, HEX, Бинарный, XOR, Аффинный, хэши MD5/SHA-1/SHA-256/SHA-512) |
 | `/emoji <action> <emoji> [format]` | Работа с эмодзи (send, info) |
 | `/emoji_list [server_id]` | Список эмодзи сервера |
 | `/feedback` | Отправить отзыв / проблему / идею |
+| `/health` | Проверить работоспособность всех модулей |
 | `/help <category>` | Справка по категориям (ai, fun, economy, tools) |
 | `/info [short_info]` | Информация о боте |
 | `/invite` | Ссылка-приглашение |
-| `/math <expression> [mode] [variable] [steps] [precision]` | Символьные вычисления |
+| `/math <expression> [mode] [variable] [steps] [precision]` | Символьные вычисления (упрощение, решение, дифференцирование, интегрирование, пределы, ряды, комплексные числа) |
 | `/ping` | Задержка бота |
-| `/plugins <action> [plugin_id]` | Управление плагинами |
+| `/plugins <action> [plugin_id]` | Управление плагинами (list, info, reload, reload_all, files, load, unload) |
 | `/reboot` | Перезагрузить бота |
-| `/say [text]` | Отправить сообщение от имени бота |
+| `/say [text]` | Отправить сообщение от имени бота (без текста – модальное окно) |
 | `/servers` | Информация о серверах бота |
 | `/shutdown` | Выключить бота |
 
@@ -256,12 +242,12 @@ Petya_Ai/
 
 ## ⭐ История версий
 
-**Текущая версия: 2.8.0**
+**Текущая версия: 2.9.0**
 - Система плагинов и модулей
 - Искусственный Интеллект
 - Экономическая RPG
 - Переводчик NLLB-200
-- 46 slash-команд
+- 47 slash-команд
 
 ---
 

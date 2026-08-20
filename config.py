@@ -8,8 +8,7 @@ USER_SETTINGS_FILE = "data/client/user_settings.json" # Настройки по�
 USER_INTERACTS_FILE = "data/client/user_interacts.json" # Взаимодействия
 JOKES_AND_QUOTES = "data/jokes_and_quotes.json" # Шутки и цитаты
 INTERACTABLES = "data/interactables.json" # База гифок для Взаимодействий
-LANGUAGES = "data/languages.json" # Языки для перевода NLLB
-# Список отключаемых плагинов и модулей (без .py)
+# Список отключаемых плагинов и модулей
 DISABLED_PLUGINS = [""] # DISABLED_PLUGINS = ["ai_learning_algorithm"]
 DISABLED_MODULES = [""] # DISABLED_MODULES = ["entertainment"]
 
@@ -33,6 +32,14 @@ TAGS_INSTRUCTION = """
 """
 MAX_QUEUE_SIZE = 10 # Максимальная очередь для локальных моделей
 RANDOM_RESPONCE_CHANCE = 0.02 # 2% Шанс ответа без упоминания бота, примерно каждые 50 сообщений.
+LANGUAGES = "data/languages.json" # Языки для перевода NLLB
+# Настройки спам фильтра
+TIMEOUT = 10
+MIN_TEXT_LENGTH = 3
+DUPLICATE_LIMIT = 3
+DUPLICATE_WINDOW = 60
+RATE_LIMIT_WINDOW = 2
+RATE_LIMIT_MAX = 3
 
 # Настройка Экономики
 XP_MULTIPLIER = 1.3 # Множитель для след.опыта

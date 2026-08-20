@@ -928,8 +928,6 @@ async def main():
         await load_all_plugins_and_modules()
         async with bot:
             await bot.start(config.TOKEN)
-    except KeyboardInterrupt:
-        print("\n🛑 Получен сигнал прерывания")
     except Exception as e:
         print(f"❌ Критическая ошибка: {e}")
         traceback.print_exc()
