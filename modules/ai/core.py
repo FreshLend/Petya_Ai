@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from langdetect import detect
 from PIL import Image
 from io import BytesIO
+from openai import OpenAI
 
 LLAMA_AVAILABLE = False
 TORCH_AVAILABLE = False
@@ -41,11 +42,6 @@ except ImportError:
     CLIPModel = None
     CLIPProcessor = None
 
-from openai import OpenAI
-
-shutdown_flag = False
-reboot_flag = False
-SHUTDOWN_TIME = 30
 
 user_contexts: Dict[int, Dict[str, Any]] = {}
 server_settings: Dict[int, Dict[str, int]] = {}
@@ -179,13 +175,6 @@ class NLLBTranslator:
                 self.tokenizer = None
 
 class SpamFilter:
-    TIMEOUT = 10
-    MIN_TEXT_LENGTH = 3
-    DUPLICATE_LIMIT = 3
-    DUPLICATE_WINDOW = 60
-    RATE_LIMIT_WINDOW = 2
-    RATE_LIMIT_MAX = 3
-
     BLOCK_MESSAGES = [
         "⛔ Ой, спам! Попробуй ещё раз, но без этого 🙃",
         "⛔ Спам-детектор говорит: 'Не надо так!' 😅",
@@ -347,15 +336,23 @@ class SpamFilter:
         if text.strip() or image_attachments:
             if self._is_rate_limited(user_id):
                 return True, "⏳ Слишком много запросов. Подождите немного."
+
+        clean_text = text.strip()
+        if clean_text:
+            first_word = clean_text.split()[0].strip('.,!?;:').lower()
+            if first_word in config.ALLOWED_KEYWORDS:
+                return False, None
+
         if text.strip():
             if self._is_duplicate_spam(user_id, text):
                 return True, random.choice(self.DUPLICATE_BLOCK_MESSAGES)
-        clean_text = text.strip()
-        if clean_text and len(clean_text) >= config.MIN_TEXT_LENGTH:
+
+        if clean_text:
             loop = asyncio.get_event_loop()
             label = await loop.run_in_executor(None, self._classify_text_sync, clean_text)
             if label == "spam":
                 return True, random.choice(self.BLOCK_MESSAGES)
+
         if image_attachments:
             for att in image_attachments[:1]:
                 if att.content_type and att.content_type.startswith("image/"):
@@ -371,6 +368,7 @@ class SpamFilter:
                     except Exception as e:
                         print(f"⚠️ Ошибка загрузки/классификации изображения: {e}")
                         continue
+
         return False, None
 
 class AiBot:
@@ -743,7 +741,7 @@ class AiBot:
         global shutdown_flag
         shutdown_flag = True
         start_time = time.time()
-        while self.active_generation and (time.time() - start_time) < SHUTDOWN_TIME:
+        while self.active_generation and (time.time() - start_time) < config.SHUTDOWN_TIME:
             await asyncio.sleep(0.5)
         for model_name in list(self.llm_instances.keys()):
             self.unload_model(model_name)
@@ -756,7 +754,7 @@ class AiBot:
         global reboot_flag
         reboot_flag = True
         start_time = time.time()
-        while self.active_generation and (time.time() - start_time) < SHUTDOWN_TIME:
+        while self.active_generation and (time.time() - start_time) < config.SHUTDOWN_TIME:
             await asyncio.sleep(0.5)
         for model_name in list(self.llm_instances.keys()):
             self.unload_model(model_name)
