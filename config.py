@@ -35,6 +35,7 @@ RANDOM_RESPONCE_CHANCE = 0.02 # 2% Шанс ответа без упоминан
 LANGUAGES = "data/languages.json" # Языки для перевода NLLB
 # Настройки спам фильтра
 TIMEOUT = 10
+ALLOWED_KEYWORDS = ["продолжим", "продолжай", "продолжение", "продолжить"]
 MIN_TEXT_LENGTH = 3
 DUPLICATE_LIMIT = 3
 DUPLICATE_WINDOW = 60
