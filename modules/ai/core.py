@@ -8,6 +8,8 @@ import random
 import aiohttp
 import discord
 import config
+import requests
+import base64
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional, Tuple
@@ -594,10 +596,20 @@ class AiBot:
                 user_msg = new_messages[i]
                 content_parts = [{"type": "text", "text": user_msg['content']}]
                 for att in image_attachments:
-                    content_parts.append({
-                        "type": "image_url",
-                        "image_url": {"url": att.url}
-                    })
+                    try:
+                        resp = requests.get(att.url, timeout=config.TIMEOUT)
+                        if resp.status_code == 200:
+                            content_type = att.content_type or 'image/png'
+                            b64_data = base64.b64encode(resp.content).decode('utf-8')
+                            data_url = f"data:{content_type};base64,{b64_data}"
+                            content_parts.append({
+                                "type": "image_url",
+                                "image_url": {"url": data_url}
+                            })
+                        else:
+                            print(f"⚠️ Не удалось загрузить {att.filename}: статус {resp.status_code}")
+                    except Exception as e:
+                        print(f"⚠️ Ошибка загрузки {att.filename}: {e}")
                 new_messages[i]['content'] = content_parts
                 break
         return new_messages
