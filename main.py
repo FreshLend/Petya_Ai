@@ -1,8 +1,3 @@
-from discord import app_commands
-from discord.ext import tasks, commands
-from functools import lru_cache
-from typing import Dict, List, Optional, Any, Tuple
-from datetime import datetime
 import discord
 import time
 import traceback
@@ -13,6 +8,59 @@ import os
 import random
 import signal
 import sys
+from discord import app_commands
+from discord.ext import tasks, commands
+from functools import lru_cache
+from typing import Dict, List, Optional, Any, Tuple
+from datetime import datetime
+
+def setup_logging():
+    log_dir = "data/logs"
+    os.makedirs(log_dir, exist_ok=True)
+    timestamp = datetime.now().strftime("%d.%m.%Y_%H-%M-%S")
+    log_filename = os.path.join(log_dir, f"{timestamp}.log")
+    log_file = open(log_filename, "w", encoding="utf-8", buffering=1)
+
+    class Tee:
+        def __init__(self, *files):
+            self.files = files
+
+        def write(self, obj):
+            for f in self.files:
+                f.write(obj)
+                f.flush()
+
+        def flush(self):
+            for f in self.files:
+                f.flush()
+
+        def isatty(self):
+            return False
+
+        def fileno(self):
+            for f in self.files:
+                if hasattr(f, 'fileno'):
+                    try:
+                        return f.fileno()
+                    except:
+                        pass
+            raise OSError("No valid file descriptor")
+
+        def close(self):
+            for f in self.files:
+                if f not in (sys.__stdout__, sys.__stderr__):
+                    f.close()
+
+    sys.__stdout__ = sys.stdout
+    sys.__stderr__ = sys.stderr
+    sys.stdout = Tee(sys.stdout, log_file)
+    sys.stderr = Tee(sys.stderr, log_file)
+
+    print(f"📝 Лог-файл: {log_filename}")
+    print(f"🕒 Запуск: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}")
+    print("=" * 60)
+
+setup_logging()
 
 class PluginMetadata:
     def __init__(self, data: dict):
