@@ -35,12 +35,24 @@ RANDOM_RESPONCE_CHANCE = 0.02 # 2% Шанс ответа без упоминан
 LANGUAGES = "data/languages.json" # Языки для перевода NLLB
 # Настройки спам фильтра
 TIMEOUT = 10
-ALLOWED_KEYWORDS = ["продолжим", "продолжай", "продолжение", "продолжить"]
 MIN_TEXT_LENGTH = 3
 DUPLICATE_LIMIT = 3
 DUPLICATE_WINDOW = 60
 RATE_LIMIT_WINDOW = 2
 RATE_LIMIT_MAX = 3
+WORDS_PATTERNS = [
+    r'(?i)\b(продолжим|продолжай|продолжение|продолжить)\b',
+    
+    r'(?i)(напиши|скинь|дай|покажи|объясни|помоги)\s*(код|аллокатор|gpu|vm|memory|cuda|пример|решение|функцию|класс)',
+
+    r'<:[a-zA-Z0-9_]+:[0-9]+>',
+
+    r'<@!?[0-9]+>',
+
+    r'<#[0-9]+>',
+
+    r'(?:https?://)?(?:www\.)?(?:youtube\.com/watch\?v=|youtu\.be/)[\w-]+',
+]
 
 # Настройка Экономики
 XP_MULTIPLIER = 1.3 # Множитель для след.опыта
