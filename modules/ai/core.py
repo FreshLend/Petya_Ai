@@ -10,6 +10,7 @@ import discord
 import config
 import requests
 import base64
+import re
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional, Tuple
@@ -231,8 +232,8 @@ class SpamFilter:
     IMAGE_SPAM_THRESHOLD = 0.5
 
     def __init__(self):
-        self.user_history: Dict[int, deque] = {}
-        self.user_request_timestamps: Dict[int, deque] = {}
+        self.user_history: dict[int, deque] = {}
+        self.user_request_timestamps: dict[int, deque] = {}
         self.text_model = None
         self.tokenizer = None
         self.clip_model = None
@@ -242,24 +243,19 @@ class SpamFilter:
         self._load_models()
 
     def _load_models(self):
-        if not (TORCH_AVAILABLE and TRANSFORMERS_AVAILABLE):
-            print("⚠️ PyTorch или Transformers не установлены. Спам-фильтр будет работать только на дубликатах и rate limit.")
-            return
         try:
+            import torch
+            from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, AutoModelForSequenceClassification, CLIPModel, CLIPProcessor
             self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             print(f"💡 Загрузка спам-фильтра на устройстве: {self.device}")
-            print(f"Загрузка текстовой модели {self.TEXT_MODEL_NAME}...")
             self.tokenizer = AutoTokenizer.from_pretrained(self.TEXT_MODEL_NAME)
             self.text_model = AutoModelForSequenceClassification.from_pretrained(self.TEXT_MODEL_NAME)
             self.text_model.to(self.device)
             self.text_model.eval()
-            print("Текстовая модель загружена.")
-            print(f"Загрузка CLIP модели {self.CLIP_MODEL_NAME}...")
             self.clip_model = CLIPModel.from_pretrained(self.CLIP_MODEL_NAME)
             self.clip_processor = CLIPProcessor.from_pretrained(self.CLIP_MODEL_NAME)
             self.clip_model.to(self.device)
             self.clip_model.eval()
-            print("CLIP модель загружена.")
             self.models_loaded = True
             print("✅ Спам-фильтр полностью загружен (локальные модели).")
         except Exception as e:
@@ -292,6 +288,12 @@ class SpamFilter:
         count = sum(1 for msg, ts in history if msg == text)
         history.append((text, now))
         return count >= config.DUPLICATE_LIMIT
+
+    def _matches_allowed_pattern(self, text: str) -> bool:
+        for pattern in config.WORDS_PATTERNS:
+            if re.search(pattern, text):
+                return True
+        return False
 
     def _classify_text_sync(self, text: str) -> str:
         if not self.models_loaded or self.text_model is None:
@@ -341,8 +343,7 @@ class SpamFilter:
 
         clean_text = text.strip()
         if clean_text:
-            first_word = clean_text.split()[0].strip('.,!?;:').lower()
-            if first_word in config.ALLOWED_KEYWORDS:
+            if self._matches_allowed_pattern(clean_text):
                 return False, None
 
         if text.strip():
