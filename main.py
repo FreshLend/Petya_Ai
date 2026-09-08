@@ -17,9 +17,13 @@ from datetime import datetime
 def setup_logging():
     log_dir = "data/logs"
     os.makedirs(log_dir, exist_ok=True)
+
     timestamp = datetime.now().strftime("%d.%m.%Y_%H-%M-%S")
     log_filename = os.path.join(log_dir, f"{timestamp}.log")
+    latest_filename = os.path.join(log_dir, "latest.log")
+
     log_file = open(log_filename, "w", encoding="utf-8", buffering=1)
+    latest_file = open(latest_filename, "w", encoding="utf-8", buffering=1)
 
     class Tee:
         def __init__(self, *files):
@@ -42,7 +46,7 @@ def setup_logging():
                 if hasattr(f, 'fileno'):
                     try:
                         return f.fileno()
-                    except:
+                    except Exception:
                         pass
             raise OSError("No valid file descriptor")
 
@@ -53,8 +57,9 @@ def setup_logging():
 
     sys.__stdout__ = sys.stdout
     sys.__stderr__ = sys.stderr
-    sys.stdout = Tee(sys.stdout, log_file)
-    sys.stderr = Tee(sys.stderr, log_file)
+
+    sys.stdout = Tee(sys.stdout, log_file, latest_file)
+    sys.stderr = Tee(sys.stderr, log_file, latest_file)
 
     print(f"📝 Лог-файл: {log_filename}")
     print(f"🕒 Запуск: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}")
@@ -604,6 +609,9 @@ async def on_message(message: discord.Message):
             was_mentioned=is_mentioned,
             image_attachments=image_attachments
         )
+
+        if '<|IGNORE|>' in response_text:
+            return
 
         final_content = response_text.replace('<|REPLY|>', '')
         final_content = final_content.replace('<|USER_ID|>', message.author.mention)

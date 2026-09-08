@@ -1,4 +1,3 @@
-# Файл: ai_commands.py
 import asyncio
 import discord
 from discord import app_commands

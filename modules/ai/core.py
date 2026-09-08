@@ -478,7 +478,7 @@ class AiBot:
             if was_mentioned:
                 system_content += "\n\nПользователь упомянул тебя. Обязательно используйте теги по своему усмотрению."
             else:
-                system_content += "\n\nТы начал разговор сам. Можешь использовать теги, но не обязательно."
+                system_content += "\n\nТы начал разговор сам. Можешь использовать теги, но не обязательно или не отвечать используя <|IGNORE|>."
         system_content += config.TAGS_INSTRUCTION
         return system_content
 
@@ -729,7 +729,7 @@ class AiBot:
                 answer = self._generate_online_response(model_name, full_context, image_attachments)
             else:
                 answer = self._generate_offline_response(model_name, full_context)
-            print(f"Сгенерирован ответ: {answer[:200]}...")
+            print(f"Сгенерирован ответ: {answer}...")
             if save_context and not ignore_context:
                 self._add_to_user_context_sync(user_id, "assistant", answer)
             return answer
