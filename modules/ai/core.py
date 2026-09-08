@@ -10,7 +10,6 @@ import discord
 import config
 import requests
 import base64
-import re
 from collections import deque
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional, Tuple
@@ -290,6 +289,7 @@ class SpamFilter:
         return count >= config.DUPLICATE_LIMIT
 
     def _matches_allowed_pattern(self, text: str) -> bool:
+        import re
         for pattern in config.WORDS_PATTERNS:
             if re.search(pattern, text):
                 return True
@@ -622,6 +622,21 @@ class AiBot:
         model_link = model_config.get("link", model_name)
         if not base_url or not token:
             raise Exception(f"Для онлайн модели {model_name} не указаны base_url или token в конфигурации")
+
+        if not (image_attachments and model_config.get("vision", False)):
+            for msg in messages:
+                content = msg.get('content')
+                if isinstance(content, list):
+                    text_parts = []
+                    for part in content:
+                        if isinstance(part, dict) and part.get('type') == 'text':
+                            text_parts.append(part.get('text', ''))
+                        elif isinstance(part, str):
+                            text_parts.append(part)
+                    msg['content'] = ' '.join(text_parts)
+                elif not isinstance(content, str):
+                    msg['content'] = str(content)
+
         client = self._get_openai_client(base_url, token)
         if image_attachments and model_config.get("vision", False):
             messages = self._build_vision_messages(messages, image_attachments)
@@ -640,6 +655,20 @@ class AiBot:
     def _generate_offline_response(self, model_name: str, messages: List[Dict[str, str]]) -> str:
         if not LLAMA_AVAILABLE:
             raise RuntimeError("Локальные модели недоступны: отсутствует llama-cpp-python.")
+        
+        for msg in messages:
+            content = msg.get('content')
+            if isinstance(content, list):
+                text_parts = []
+                for part in content:
+                    if isinstance(part, dict) and part.get('type') == 'text':
+                        text_parts.append(part.get('text', ''))
+                    elif isinstance(part, str):
+                        text_parts.append(part)
+                msg['content'] = ' '.join(text_parts)
+            elif not isinstance(content, str):
+                msg['content'] = str(content)
+        
         model_config = self.models_config[model_name]
         llm = self.load_model(model_name)
         if llm is None:
