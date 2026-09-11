@@ -37,11 +37,11 @@ RANDOM_RESPONCE_CHANCE = 0.02 # 2% Шанс ответа без упоминан
 LANGUAGES = "data/languages.json" # Языки для перевода NLLB
 # Настройки спам фильтра
 TIMEOUT = 10
-MIN_TEXT_LENGTH = 3
+MIN_TEXT_LENGTH = 6
 DUPLICATE_LIMIT = 3
 DUPLICATE_WINDOW = 60
-RATE_LIMIT_WINDOW = 2
-RATE_LIMIT_MAX = 3
+RATE_LIMIT_WINDOW = 4
+RATE_LIMIT_MAX = 6
 WORDS_PATTERNS = [
     r'(?i)\b(продолжим|продолжай|продолжение|продолжить)\b',
     
