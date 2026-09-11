@@ -279,13 +279,14 @@ class SpamFilter:
 
     def _is_duplicate_spam(self, user_id: int, text: str) -> bool:
         now = time.time()
+        key = text.strip().lower()
         if user_id not in self.user_history:
             self.user_history[user_id] = deque(maxlen=config.DUPLICATE_LIMIT + 1)
         history = self.user_history[user_id]
         while history and now - history[0][1] > config.DUPLICATE_WINDOW:
             history.popleft()
-        count = sum(1 for msg, ts in history if msg == text)
-        history.append((text, now))
+        count = sum(1 for msg, ts in history if msg == key)
+        history.append((key, now))
         return count >= config.DUPLICATE_LIMIT
 
     def _matches_allowed_pattern(self, text: str) -> bool:
@@ -346,11 +347,10 @@ class SpamFilter:
             if self._matches_allowed_pattern(clean_text):
                 return False, None
 
-        if text.strip():
-            if self._is_duplicate_spam(user_id, text):
+        if len(clean_text) >= config.MIN_TEXT_LENGTH:
+            if self._is_duplicate_spam(user_id, clean_text):
                 return True, random.choice(self.DUPLICATE_BLOCK_MESSAGES)
 
-        if clean_text:
             loop = asyncio.get_event_loop()
             label = await loop.run_in_executor(None, self._classify_text_sync, clean_text)
             if label == "spam":
