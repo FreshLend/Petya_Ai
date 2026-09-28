@@ -227,7 +227,7 @@ class SpamFilter:
     CLIP_MODEL_NAME = "openai/clip-vit-base-patch32"
     CLIP_LABELS = ["scam", "phishing", "fake giveaway", "fraud", "normal", "safe"]
     SPAM_INDICES = [0, 1, 2, 3]
-    TEXT_SPAM_THRESHOLD = 0.9
+    TEXT_SPAM_THRESHOLD = 0.92
     IMAGE_SPAM_THRESHOLD = 0.5
 
     def __init__(self):
@@ -306,7 +306,8 @@ class SpamFilter:
                 outputs = self.text_model(**inputs)
                 probs = torch.softmax(outputs.logits, dim=1)
                 spam_prob = probs[0][0].item()
-                return "spam" if spam_prob > self.TEXT_SPAM_THRESHOLD else "ham"
+            print(f"🧪 spam_prob={spam_prob:.3f} | {text[:80]!r}")
+            return "spam" if spam_prob > self.TEXT_SPAM_THRESHOLD else "ham"
         except Exception as e:
             print(f"⚠️ Ошибка при классификации текста: {e}")
             return "ham"
@@ -344,6 +345,7 @@ class SpamFilter:
 
         clean_text = text.strip()
         if clean_text:
+            print(f"🔍 whitelist check | {clean_text!r}")
             if self._matches_allowed_pattern(clean_text):
                 return False, None
 
